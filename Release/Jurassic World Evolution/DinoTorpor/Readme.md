@@ -1,14 +1,17 @@
-# Awesome Cobra Script Extender (ACSE)
-The Awesome Cobra Script Extender (ACSE) is a tool used by many Cobra engine mods that expands scripting capabilities and adds additional functionality to the games developed by Frontier. 
+# DinoTorpor (ACSE Script Mod)
+This mod requires the Awesome Cobra Script Extender (ACSE) mod to work. 
 
+DinoTorpor will wake up the tranquillised dinosaurs after a certain period of time. Current status is in heavy development.
+
+### Install instructions
+- Install ACSE Mod from https://github.com/OpenNaja/ACSE
+- Drop the DinoTorpor Mod folder inside the OVLData data folder.
+- Launch the game
 
 ### Disclaimer
 - Remember to backup all mod files and stock files. Any patches will reset or break the mods and will need to be redone and re-released. 
 - Not all model files are supported at this time. Some may crash on import or export. Even if they (seemingly) import and export fine, the result is not guaranteed to work ingame.
 - ** Work In Progress ** this software is still work in progress and may crash your game or not perform appropriately.
-
-### Legal Notice
-This software is developed under 'fair use' by enthusiasts and is not affiliated with Universal© or Frontier® in any form.
 
 By downloading and using this software, you agree to the following conditions:
 - **Use this software at your own risk.** It may cause damage to you, your equipment or your data. The authors are not responsible for your actions.
@@ -26,4 +29,3 @@ By downloading and using this software, you agree to the following conditions:
 Some Discords where modding progress is discussed can be found here:
 
 - [Frontier Modding Club](https://discord.gg/Su4jXKk)
-
