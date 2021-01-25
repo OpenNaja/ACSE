@@ -1,5 +1,7 @@
 # Awesome Cobra Script Extender (ACSE)
 
+A tool to inject custom scripting in Cobra engine games.
+
 ### Disclaimer
 - Remember to backup all mod files and stock files. Any patches will reset or break the mods and will need to be redone and re-released. 
 - Not all model files are supported at this time. Some may crash on import or export. Even if they (seemingly) import and export fine, the result is not guaranteed to work ingame.
