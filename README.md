@@ -1,4 +1,5 @@
 # Awesome Cobra Script Extender (ACSE)
+The Awesome Cobra Script Extender (ACSE) is a tool used by many Cobra engine mods that expands scripting capabilities and adds additional functionality to the games developed by Frontier. 
 
 A tool to inject custom scripting in Cobra engine games.
 
@@ -21,7 +22,6 @@ By downloading and using this software, you agree to the following conditions:
 - Planet Zoo, Cobra, Frontier and the Frontier Developments logo are trademarks or registered trademarks of Frontier Developments, plc.
 - Jurassic World, Jurassic World Fallen Kingdom, Jurassic World Evolution and their respective logos are trademarks of Universal Studios and Amblin Entertainment, Inc.
 - Daemon1, DennisNedry1993 and Inaki for initial modding attempts and documentation.
-- `texconv` from [DirectXTex](https://github.com/microsoft/DirectXTex) is used internally to convert to and from DDS textures.
 
 ### Get in touch
 Some Discords where modding progress is discussed can be found here:
