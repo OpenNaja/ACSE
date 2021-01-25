@@ -13,7 +13,7 @@ local require = global.require
 --/ Module creation
 local DinoTorpor = module(...)
 
-global.loadfile("TorporLuaDatabase Loaded")
+-- global.loadfile("TorporLuaDatabase Loaded")
 
 -- @brief add our custom managers to the ACSE database
 DinoTorpor.AddContentToCall = function(_tContentToCall)
