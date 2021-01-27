@@ -14,7 +14,7 @@ local pairs   = global.pairs
 local DinoTorporData = module(...)
 
 --/ Used as debug output for now
--- global.loadfile("Database.DinoTorpor.lua Loaded")
+global.loadfile("Database.DinoTorpor.lua Loaded")
 
 --/ List of custom managers to force injection on a park
 DinoTorporData.tParkManagers  = {

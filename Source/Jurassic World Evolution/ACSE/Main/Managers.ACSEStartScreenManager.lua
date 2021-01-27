@@ -4,7 +4,8 @@
 --/
 --/  @brief  Boilerplate template for the starting screen manager script
 --/  @see    https://github.com/OpenNaja/ACSE
------------------------------------------------------------------------local global = _G
+-----------------------------------------------------------------------
+local global = _G
 local api = global.api
 local pairs = global.pairs
 local require = global.require
@@ -14,10 +15,11 @@ local Object = require("Common.object")
 local Mutators = require("Environment.ModuleMutators")
 local ACSEStartScreenManager= module(..., Mutators.Manager())
 
--- global.loadfile("Managers..ACSEStartScreenManager.lua loaded")
+global.api.debug.Trace("ACSE StartScreen manager loaded")
 
 -- @Brief Init function for this manager
 ACSEStartScreenManager.Init = function(self, _tProperties, _tEnvironment)
+	global.api.debug.Trace("ACSEStartScreenManager:Init()")
 end
 
 -- @Brief Update function for this manager

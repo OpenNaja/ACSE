@@ -13,12 +13,13 @@ local module = global.module
 local table = require("Common.tableplus")
 local Object = require("Common.object")
 local Mutators = require("Environment.ModuleMutators")
-local ACSEParkManager= module(..., Mutators.Manager())
+local ACSEParkManager = module(..., Mutators.Manager())
 
--- global.loadfile("Managers..ACSEParkManager.lua loaded")
+global.api.debug.Trace("ACSEParkManager loaded")
 
 -- @Brief Init function for this manager
 ACSEParkManager.Init = function(self, _tProperties, _tEnvironment)
+	global.api.debug.Trace("ACSEParkManager:Init()")
 end
 
 -- @Brief Update function for this manager

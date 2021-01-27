@@ -13,7 +13,18 @@ local type  = global.type
 local require = require
 local ACSEDatabase = module(...)
 
--- global.loadfile("Database.ACSELuaDatabase.lua loaded")
+-- @brief setup a custom debug/trace system to use
+global.api.asec = {}
+global.api.asec.Trace = function(msg)
+	global.loadfile("acse :" .. msg)
+end
+global.api.asec.Error = function(msg)
+	global.api.asec.Trace("Err- " .. msg)
+end
+global.api.debug.Trace = global.api.asec.Trace
+global.api.debug.Error = global.api.asec.Error
+
+global.api.debug.Trace("Database.ACSELuaDatabase.lua loaded on " .. global._VERSION)
 
 -- @brief add our custom databases
 ACSEDatabase.AddContentToCall = function(_tContentToCall)

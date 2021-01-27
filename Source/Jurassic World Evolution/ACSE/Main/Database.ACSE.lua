@@ -17,8 +17,6 @@ local Main = require("Database.Main")
 local GameDatabase = require("Database.GameDatabase")
 local ACSE = module(...)
 
--- global.loadfile("Database.ACSE.lua loaded")
-
 -- Constant version
 ACSE.nVersion = 0.231
 
@@ -54,6 +52,7 @@ ACSE.tDatabaseMethods   = {
 	end
 }
 
+global.api.debug.Trace("ACSE " .. ACSE.nVersion .. " loaded")
 
 -- @brief Database init
 ACSE.Init = function()
@@ -119,3 +118,5 @@ ACSE.AddParkManagers = function(_fnAdd)
     _fnAdd(sManagerName, tParams)
   end
 end
+
+

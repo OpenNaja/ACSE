@@ -16,6 +16,8 @@ local GameDatabase = require("Database.GameDatabase")
 local Mutators = require("Environment.ModuleMutators")
 local Module = module(..., Mutators.EnvironmentPrototype)
 
+global.api.debug.Trace("Custom Park Environment loaded")
+
 -- Default Park Environment defintion from JWE 1.8
 Module.EnvironmentPrototype = {
 	SearchPaths = {"Managers"},
@@ -147,10 +149,11 @@ Module.EnvironmentPrototype = {
 }
 
 -- Merge default Managers with ACSE collected protos
-if GameDatabase.GetStartEnvironmentProtos then
-  for _sName, _tParams in pairs( GameDatabase.GetParkEnvironmentManagers() ) do
-	Module.EnvironmentPrototype['Managers'][_sName] = _tParams
-  end
+if GameDatabase.GetParkEnvironmentManagers then
+	for _sName, _tParams in pairs( GameDatabase.GetParkEnvironmentManagers() ) do
+		global.api.debug.Trace("acse Adding Manager: " .. _sName)
+		Module.EnvironmentPrototype['Managers'][_sName] = _tParams
+	end
 end
 
 -- confirm the environment comply its proto
