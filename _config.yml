@@ -4,6 +4,7 @@ description: A description has to go here, but for now it is just this msg.
 tagline: this is the tagline
 logo: /assets/img/logo.png
 show_downloads: true
+theme: minima
 
 
 author:
