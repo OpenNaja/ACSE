@@ -6,6 +6,7 @@
 --/  @see    https://github.com/OpenNaja/ACSE
 -----------------------------------------------------------------------
 local global = _G
+local api = global.api
 local table = global.table
 local pairs = global.pairs
 local ipairs = global.ipairs
@@ -13,18 +14,25 @@ local type  = global.type
 local require = require
 local ACSEDatabase = module(...)
 
+global.api.debug.Trace("Database.ACSELuaDatabase.lua loaded")
+
 -- @brief setup a custom debug/trace system to use
-global.api.asec = {}
-global.api.asec.Trace = function(msg)
+global.api.acse = {}
+global.api.acse.versionNumber = 0.513
+global.api.acse.GetACSEVersionString = function()
+    return global.tostring(global.api.acse.versionNumber)
+end
+
+global.api.acse.Trace = function(msg)
 	global.loadfile("acse :" .. msg)
 end
-global.api.asec.Error = function(msg)
-	global.api.asec.Trace("Err- " .. msg)
+global.api.acse.Error = function(msg)
+	global.api.acse.Trace("case -Err- " .. msg)
 end
-global.api.debug.Trace = global.api.asec.Trace
-global.api.debug.Error = global.api.asec.Error
 
-global.api.debug.Trace("Database.ACSELuaDatabase.lua loaded on " .. global._VERSION)
+global.api.debug.Trace = global.api.acse.Trace
+global.api.debug.Error = global.api.acse.Error
+
 
 -- @brief add our custom databases
 ACSEDatabase.AddContentToCall = function(_tContentToCall)

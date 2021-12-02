@@ -17,9 +17,6 @@ local Main = require("Database.Main")
 local GameDatabase = require("Database.GameDatabase")
 local ACSE = module(...)
 
--- Constant version
-ACSE.nVersion = 0.231
-
 -- List of protos/managers to populate from other mods
 ACSE.tParkEnvironmentProtos  = {}
 ACSE.tStartEnvironmentProtos = {}
@@ -47,12 +44,12 @@ ACSE.tDatabaseMethods   = {
 	end,
 
 	--/ version info
-	GetACSEVersion = function()
-		return ACSE.nVersion
+	GetACSEVersionString = function()
+		return api.acse.GetACSEVersionString()
 	end
 }
 
-global.api.debug.Trace("ACSE " .. ACSE.nVersion .. " loaded")
+api.debug.Trace("ACSE " .. api.acse.GetACSEVersionString() .. " Running on " .. global._VERSION)
 
 -- @brief Database init
 ACSE.Init = function()
@@ -98,11 +95,6 @@ ACSE.tStartScreenManagers = {
 	["Managers.ACSEStartScreenManager"] = {}
 }
 
--- List of custom managers to force injection on a park
-ACSE.tParkManagers  = {
-	["Managers.ACSEParkManager"] = {}
-}
-
 -- @brief Add our custom Manager to the starting screen
 ACSE.AddStartScreenManagers = function(_fnAdd)
   local tData = ACSE.tStartScreenManagers
@@ -110,6 +102,11 @@ ACSE.AddStartScreenManagers = function(_fnAdd)
     _fnAdd(sManagerName, tParams)
   end
 end
+
+-- List of custom managers to force injection on a park
+ACSE.tParkManagers  = {
+	["Managers.ACSEParkManager"] = {}
+}
 
 -- @brief Add our custom Manager to the starting screen
 ACSE.AddParkManagers = function(_fnAdd)

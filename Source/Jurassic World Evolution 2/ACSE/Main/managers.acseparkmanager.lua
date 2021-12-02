@@ -19,7 +19,7 @@ global.api.debug.Trace("ACSEParkManager loaded")
 
 -- @Brief Init function for this manager
 ACSEParkManager.Init = function(self, _tProperties, _tEnvironment)
-	global.loadfile("ACSEParkManager Init")
+	api.debug.Trace("ACSEParkManager:Init()")
 end
 
 -- @Brief Update function for this manager
@@ -36,6 +36,7 @@ end
 
 -- @Brief Shutdown function for this manager
 ACSEParkManager.Shutdown = function(self)
+	api.debug.Trace("ACSEParkManager:Shutdown()")
 end
 
 --/ Validate class methods and interfaces

@@ -18,7 +18,7 @@ local GameDatabase = require("Database.GameDatabase")
 local Mutators = require("Environment.ModuleMutators")
 local Module   = module(..., Mutators.EnvironmentPrototype)
 
-global.api.debug.Trace("Custom StartScreen Environment loaded")
+api.debug.Trace("Custom StartScreen Environment loaded")
 
 -- Default Start Screen Environment defintion from JWE 1.8
 Module.EnvironmentPrototype = {
@@ -38,7 +38,7 @@ Module.EnvironmentPrototype = {
 -- Merge default protos with ACSE collected protos
 if GameDatabase.GetStartEnvironmentManagers then
   for _sName, _tParams in pairs( GameDatabase.GetStartEnvironmentManagers() ) do
-    global.api.debug.Trace("acse Adding Manager: " .. _sName)
+   api.debug.Trace("acse Adding Manager: " .. _sName)
 	Module.EnvironmentPrototype['Managers'][_sName] = _tParams
   end
 end
