@@ -97,12 +97,38 @@ ACSE.Init = function()
   	api.debug.RegisterShellCommand(
   		function(tEnv, tArgs)
  				api.debug.Trace("List of Tweakables:")
-  			for k,v in pairs(api.acse.tTweakables) do
-  				api.debug.Trace(v.id .. " = " .. tostring(v.val))
+  			for k,v in global.pairs(api.acse.tTweakables) do
+  				api.debug.Trace( global.tostring(v.id) .. " = " .. global.tostring(v.value))
   			end
       end, 
       "ListTweakables", 
       "Prints a list of the current tweakables and its values.\n"
+    ),
+  	api.debug.RegisterShellCommand(
+  		function(tEnv, tArgs)
+ 				api.debug.Trace("List of Commands:")
+  			for k,v in global.pairs(api.acse.tShellCommands) do
+  				api.debug.Trace( global.tostring(v._sCmd) )
+  			end
+      end, 
+      "ListCommands", 
+      "Prints a list of the current commands and its arguments.\n"
+    ),
+  	api.debug.RegisterShellCommand(
+  		function(tEnv, tArgs)
+ 				if global.type(tArgs) == 'table' and #tArgs > 0 and global.type(tArgs[1]) == "string" then
+ 					oCmd = api.acse.tShellCommands[tArgs[1]]
+ 					if global.type(oCmd) == 'table' then
+ 						global.api.debug.Trace( global.tostring(oCmd._sCmd) .. "\n" .. global.tostring(oCmd._sDesc))
+ 					else 
+ 						global.api.debug.Trace("Command " .. global.tostring(tArgs[1]) .. " not found.")
+ 					end
+ 				else
+ 					global.api.debug.Trace("Help requires a command name as argument")
+  			end
+      end, 
+      "Help {String}", 
+      "Displays information about a command.\n"
     ),
   }
 
