@@ -116,7 +116,6 @@ end
 -- @brief Runs a command
 global.api.acse.RunShellCommand = function(sCmd)
 
-    -- global.api.debug.Trace("Executing shell command: " .. sCmd)
     -- this RunShellCommand will fail until we
     --/TODO fix the sCmd string format check for command syntax
     -- and extract args from the sCmd string
@@ -137,8 +136,8 @@ global.api.acse.RunShellCommand = function(sCmd)
 	   	end
 
 	   	for i, v in global.ipairs(tCArgs) do
-	   		if v == "{String}" then end	-- do nothing, for SetTweakable
-	   		if v == "{Number}" then end	-- do nothing, for SetTweakable
+	   		if v == "{string}" then end	-- do nothing, for SetTweakable
+	   		if v == "{number}" then end	-- do nothing, for SetTweakable
 	   		if v == "{float}" then tArgs[i] = global.tonumber(tArgs[i]) end
 	   		if v == "{int32}" then tArgs[i] = global.tonumber(tArgs[i]) end
 		   	if v == "{int64}" then tArgs[i] = global.tonumber(tArgs[i]) end

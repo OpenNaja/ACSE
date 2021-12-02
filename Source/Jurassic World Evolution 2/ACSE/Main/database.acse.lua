@@ -88,10 +88,17 @@ ACSE.Init = function()
   		function(tEnv, tArgs)
   			tweakable = api.acse.GetDebugTweakable(tArgs[1])
   			if tweakable ~= nil then
-  				tweakable.value = tArgs[2]
+  			  if tweakable.type == 22 then -- boolean
+  			    --TODO: maybe tolower() the true/false string
+	   				local stringtoboolean={ ["true"]=true, ["false"]=false }
+  			  	tArgs[2] = stringtoboolean[tArgs[2]]
+  				else -- numbers
+  			  	tArgs[2] = global.tonumber(tArgs[2])
+  			  end
+  				tweakable:SetValue(tArgs[2])
   			end
       end, 
-      "SetTweakable {String} {Number}", 
+      "SetTweakable {string} {number}", 
       "Changes the value of a tweakable.\n"
     ),
   	api.debug.RegisterShellCommand(
@@ -127,9 +134,31 @@ ACSE.Init = function()
  					global.api.debug.Trace("Help requires a command name as argument")
   			end
       end, 
-      "Help {String}", 
+      "Help {string}", 
       "Displays information about a command.\n"
     ),
+  	api.debug.RegisterShellCommand(
+  		function(tEnv, tArgs)
+  			if global.pcall(function()
+
+  				global.api.debug.Trace("Loading file: " .. global.tostring(tArgs[1]))
+  				local pf = global.loadfile(tArgs[1])
+					if pf ~= nil then
+	  				local result = pf()
+	  			else
+  					global.api.debug.Trace("Lua file not loaded (file not found or wrong syntax).")
+					end  				
+				end
+  			) then
+  				-- file loaded and ran fine
+  			else
+  				global.api.debug.Trace("There was a problem running the Lua file.")
+  			end
+
+      end, 
+      "Loadfile {string}", 
+      "Loads and execute a Lua file from the game root folder, do not add path.\n"
+    ),    
   }
 
 end
