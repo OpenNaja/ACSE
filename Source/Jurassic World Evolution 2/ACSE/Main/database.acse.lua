@@ -46,13 +46,22 @@ ACSE.tDatabaseMethods   = {
 	--/ version info
 	GetACSEVersionString = function()
 		return api.acse.GetACSEVersionString()
-	end
+	end,
+
+	--/ have access to the tweakables
+	GetAllTweakables = function()
+		return api.acse.GetTweakables()
+	end,
 }
 
 api.debug.Trace("ACSE " .. api.acse.GetACSEVersionString() .. " Running on " .. global._VERSION)
 
+
 -- @brief Database init
 ACSE.Init = function()
+
+  ACSE._initLuaOverrides()
+  global.api.debug.Trace("ACSE:Init()")
 
 	ACSE.tParkEnvironmentProtos  = { SearchPaths = {},	Managers = {} }
 	ACSE.tStartEnvironmentProtos = { SearchPaths = {},	Managers = {} }
@@ -73,10 +82,44 @@ ACSE.Init = function()
 	end
 	)
 
+  -- Register our own custom shell commands
+  ACSE.tShellCommands = {
+  	api.debug.RegisterShellCommand(
+  		function(tEnv, tArgs)
+  			tweakable = api.acse.GetDebugTweakable(tArgs[1])
+  			if tweakable ~= nil then
+  				tweakable.value = tArgs[2]
+  			end
+      end, 
+      "SetTweakable {String} {Number}", 
+      "Changes the value of a tweakable.\n"
+    ),
+  	api.debug.RegisterShellCommand(
+  		function(tEnv, tArgs)
+ 				api.debug.Trace("List of Tweakables:")
+  			for k,v in pairs(api.acse.tTweakables) do
+  				api.debug.Trace(v.id .. " = " .. tostring(v.val))
+  			end
+      end, 
+      "ListTweakables", 
+      "Prints a list of the current tweakables and its values.\n"
+    ),
+  }
+
 end
 
 -- @brief Environment Shutdown
 ACSE.Shutdown = function()
+  global.api.debug.Trace("ACSE:Shutdown()")
+
+  -- Remove custom commands
+  for i,oCommand in ipairs(ACSE.tShellCommands) do
+    api.debug.UnregisterShellCommand(oCommand)
+  end
+  ACSE.tShellCommands = nil
+
+  -- Restore Lua environment
+  ACSE._shutdownLuaOverrides()
 end
 
 -- @brief Called when a Reinit is about to happen
@@ -114,6 +157,33 @@ ACSE.AddParkManagers = function(_fnAdd)
   for sManagerName, tParams in pairs(tData) do
     _fnAdd(sManagerName, tParams)
   end
+end
+
+-- @Brief Perform any custom Lua:global/api updates
+ACSE._initLuaOverrides = function()
+
+  -- Perform Lua override
+  local raw = global.api.debug
+  local tMetaTable = {}
+  tMetaTable._sampleAPI = function(...)
+    return self:_sampleAPI(raw, ...)
+  end
+--  global.api.debug = global.setmetatable(tMetaTable, { __index = raw })
+  global.api.debug = global.setmetatable(global.api.acse, { __index = raw })
+  global.api.debug.Trace("Exiting lua overrides")
+
+
+
+end
+
+-- @Brief Undo all Lua changes so the game exists gracefully
+ACSE._shutdownLuaOverrides = function()
+ --  Perform API/Lua clean up
+   api.debug = global.getmetatable(api.debug).__index
+end
+
+ACSE._sampleAPI = function(self, raw, test)
+    return 
 end
 
 

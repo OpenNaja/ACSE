@@ -17,15 +17,11 @@ local ACSEStartScreenManager= module(..., Mutators.Manager())
 
 -- @Brief Init function for this manager
 ACSEStartScreenManager.Init = function(self, _tProperties, _tEnvironment)
-	-- Init Lua overrides
-	self:_initLuaOverrides()
-
 	api.debug.Trace("ACSEStartScreenManager:Init()")
 end
 
 -- @Brief Activate function for this manager
 ACSEStartScreenManager.Activate = function(self)
-	api.debug.Trace("ACSEStartScreenManager:Activate()")
 end
 
 -- @Brief Update function for this manager
@@ -45,15 +41,11 @@ end
 
 -- @Brief Deactivate function for this manager
 ACSEStartScreenManager.Deactivate = function(self)
-	api.debug.Trace("ACSEStartScreenManager:Deactivate()")
 end
 
 -- @Brief Shutdown function for this manager
 ACSEStartScreenManager.Shutdown = function(self)
 	api.debug.Trace("ACSEStartScreenManager:Shutdown()")
-
-	-- Undo Lua overrides
-	self:_shutdownLuaOverrides()
 end
 
 -- @Brief Display ACSE is enabled in the frontend version string
@@ -70,14 +62,6 @@ ACSEStartScreenManager._attachACSEVersionString = function(self)
         "versionNumber",
         versionString .. endpointString .. "\n" .. "ACSE " .. acseString
     )
-end
-
--- @Brief Perform any custom Lua:global/api updates
-ACSEStartScreenManager._initLuaOverrides = function(self)
-end
-
--- @Brief Undo all Lua changes so the game exists gracefully
-ACSEStartScreenManager._shutdownLuaOverrides = function(self)
 end
 
 --/ Validate class methods and interfaces
