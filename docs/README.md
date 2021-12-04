@@ -17,11 +17,8 @@ installed at the same time.
 
 ### Disclaimer
 
-- This software is still work in progress and may crash your game or not perform appropriately.
-
-### Legal Notice
 This software is developed under 'fair use' by enthusiasts and is not affiliated with Universal© or Frontier® in any form. By downloading and using this software, you agree to the following conditions:
-- **Use this software at your own risk.** It may cause damage to you, your equipment or your data. The authors are not responsible for your actions.
+- **Use this software at your own risk.** This software is still work in progress. It may cause damage to you, your equipment or your data. The authors are not responsible for your actions.
 
 
 ### Credits
