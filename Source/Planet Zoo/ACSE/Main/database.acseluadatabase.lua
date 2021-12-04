@@ -158,17 +158,17 @@ end
 global.api.acse.RunShellCommand = function(sCmd)
 
     -- this RunShellCommand will fail until we handle missing argument types (vector:3 etc..)
-	tArgs = stringSplit(sCmd)
-	name = tArgs[1]
+    tArgs = stringSplit(sCmd)
+    name = tArgs[1]
     name = global.string.lower(name)
-	global.table.remove(tArgs, 1)
+    global.table.remove(tArgs, 1)
 
     local cmd = global.api.acse.tShellCommands[name]
     if cmd ~= nil then
 
-	    -- Convert Arg types
-	   	tCArgs = stringSplit(cmd._sCmd)
-	   	global.table.remove(tCArgs, 1)
+        -- Convert Arg types
+        tCArgs = stringSplit(cmd._sCmd)
+        global.table.remove(tCArgs, 1)
 
         for i, v in global.pairs(tArgs) do
             if tCArgs[i] ~= nil then
@@ -197,6 +197,6 @@ end
 
 -- @brief add our custom databases
 ACSEDatabase.AddContentToCall = function(_tContentToCall)
-	table.insert(_tContentToCall, require("Database.ACSE"))
+    table.insert(_tContentToCall, require("Database.ACSE"))
 end
 

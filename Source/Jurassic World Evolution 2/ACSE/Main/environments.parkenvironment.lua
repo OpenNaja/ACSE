@@ -1,8 +1,8 @@
 -----------------------------------------------------------------------
---/  @file   ParkEnvironment.lua
+--/  @file   Environments.ParkEnvironment.lua
 --/  @author My Self
 --/
---/  @frief  Park Environments definition for Jurassic World Evolution
+--/  @brief  Park Environments definition for Jurassic World Evolution 2
 --/  @see    https://github.com/OpenNaja/ACSE
 -----------------------------------------------------------------------
 local global = _G
