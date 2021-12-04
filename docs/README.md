@@ -1,6 +1,4 @@
 # Awesome Cobra Script Extender (ACSE)
-The Awesome Cobra Script Extender (ACSE) is a tool used by many Cobra engine mods that expands scripting capabilities and adds additional functionality to the games developed by Frontier. 
-
 You probably reached this page because a mod asked you to download and install ACSE. If this the case then please follow the instructions below.
 
 ### Installing ACSE
@@ -22,9 +20,7 @@ installed at the same time.
 - This software is still work in progress and may crash your game or not perform appropriately.
 
 ### Legal Notice
-This software is developed under 'fair use' by enthusiasts and is not affiliated with Universal© or Frontier® in any form.
-
-By downloading and using this software, you agree to the following conditions:
+This software is developed under 'fair use' by enthusiasts and is not affiliated with Universal© or Frontier® in any form. By downloading and using this software, you agree to the following conditions:
 - **Use this software at your own risk.** It may cause damage to you, your equipment or your data. The authors are not responsible for your actions.
 
 
@@ -35,5 +31,5 @@ By downloading and using this software, you agree to the following conditions:
 ### Get in touch
 Some Discords where modding progress is discussed can be found here:
 
-- [Frontier Modding Club](https://discord.gg/Su4jXKk)
+- [Frontier Modding Club Dicord](https://discord.gg/Su4jXKk)
 
