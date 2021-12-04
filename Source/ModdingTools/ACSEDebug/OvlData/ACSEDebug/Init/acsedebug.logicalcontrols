@@ -1,0 +1,5 @@
+<LogicalControls>
+	<LogicalControl flags="0" name="ACSEDebug_ToggleConsole" type="Button">
+		<DefaultValue k1a="40" k1b="0" k2="0" k3="0" k4="0" />
+	</LogicalControl>
+</LogicalControls>
