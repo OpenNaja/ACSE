@@ -1,11 +1,11 @@
-# Awesome Cobra Script Extender (ACSE)
+# Awesome Cobra Script Extender
 You probably reached this page because a mod asked you to download and install ACSE. If this the case then please follow the instructions below.
 
 ### Installing ACSE
 
 - Download the ACSE Zip package (download link on the left) and extract the files. Browse to the corresponding game title folder in the release
-directory (e.g: Release/Jurassic World Evolution2/ or Release/Planet Zoo/). Currently only Jurassic World 1 and 2, and Planet Zoo are supported.
-- Copy the ACSE folder to your clipboard and paste it or drag and drop it into the game 'OVLData' folder (e.g. /Jurassic World Evolution 2/Win64/OvlData/ or /Planet Zoo/Win64/OvlData/).
+directory (e.g: "Release/Jurassic World Evolution2/" or "Release/Planet Zoo/"). Currently only Jurassic World 1 and 2, and Planet Zoo are supported.
+- Copy the ACSE folder to your clipboard and paste it or drag and drop it into the game 'OVLData' folder (e.g. "/Jurassic World Evolution 2/Win64/OvlData/" or "/Planet Zoo/Win64/OvlData/").
 - If you completed these steps correctly, you will have an ACSE folder in the same directory as the game GameMain folder.
 
 Note: If you have a previous version of ACSE installed, the new one must overwrite the old one. There cannot be two version of ACSE

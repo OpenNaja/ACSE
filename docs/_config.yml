@@ -1,6 +1,6 @@
 theme: jekyll-theme-minimal
 title: ACSE
-description: The Awesome Cobra Script Extender (ACSE) is a tool used by many Cobra engine mods that expands scripting capabilities and adds additional functionality to the games using Cobra engine.
+description: The Awesome Cobra Script Extender (ACSE) is a tool used to expand scripting capabilities and add additional functionality to the games using Cobra engine.
 tagline: this is the tagline
 logo: /assets/images/open-naja.png
 show_downloads: true
