@@ -12,5 +12,4 @@ This python script requires having Frida for python installed
 
 - Run the game. Inmediatelly after the game starts execute the execute the script with the following syntax:
 > python acselog.py jwe2.exe
-
 - After quitting the game it is necessay to relaunch the log script.
