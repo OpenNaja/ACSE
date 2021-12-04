@@ -1,26 +1,36 @@
 # Awesome Cobra Script Extender (ACSE)
 The Awesome Cobra Script Extender (ACSE) is a tool used by many Cobra engine mods that expands scripting capabilities and adds additional functionality to the games developed by Frontier. 
 
+You probably reached this page because a mod asked you to download and install ACSE. If this the case then please follow the instructions below.
+
+### Installing ACSE
+
+- Download the ACSE Zip package (download link on the left) and extract the files. Browse to the corresponding game title folder in the release
+directory (e.g: Release/Jurassic World Evolution2/ or Release/Planet Zoo/). Currently only Jurassic World 1 and 2, and Planet Zoo are supported.
+- Copy the ACSE folder to your clipboard and paste it or drag and drop it into the game 'OVLData' folder (e.g. /Jurassic World Evolution 2/Win64/OvlData/ or /Planet Zoo/Win64/OvlData/).
+- If you completed these steps correctly, you will have an ACSE folder in the same directory as the game GameMain folder.
+
+Note: If you have a previous version of ACSE installed, the new one must overwrite the old one. There cannot be two version of ACSE
+installed at the same time.
+
+### Uninstalling ACSE
+
+- Browse to your game folder and remove the ACSE folder. 
 
 ### Disclaimer
-- Remember to backup all mod files and stock files. Any patches will reset or break the mods and will need to be redone and re-released. 
-- Not all model files are supported at this time. Some may crash on import or export. Even if they (seemingly) import and export fine, the result is not guaranteed to work ingame.
-- ** Work In Progress ** this software is still work in progress and may crash your game or not perform appropriately.
+
+- This software is still work in progress and may crash your game or not perform appropriately.
 
 ### Legal Notice
 This software is developed under 'fair use' by enthusiasts and is not affiliated with Universal© or Frontier® in any form.
 
 By downloading and using this software, you agree to the following conditions:
 - **Use this software at your own risk.** It may cause damage to you, your equipment or your data. The authors are not responsible for your actions.
-- **Do not use this software to circumvent copy protections.** Especially, do not try to unlock downloadable content for free, share official artwork or intellectual property or engage in so-called data mining to announce game content before an official announcement.
-- **Do not seek monetary compensation for mods made with this software.** Do not charge money or ask for donations in order to download the mods. Do not accept payment in exchange for exclusive rights (even if temporary) to commissioners of mods.
-- **Secure permission to use other parties' work in your mods.** This includes but is not limited to using IP, artwork, skin designs and 3D models (eg. porting models from another game). If you don't have the approval of the copyright holder(s), be prepared to face the consequences.
 
 
 ### Credits
 - Planet Zoo, Cobra, Frontier and the Frontier Developments logo are trademarks or registered trademarks of Frontier Developments, plc.
-- Jurassic World, Jurassic World Fallen Kingdom, Jurassic World Evolution and their respective logos are trademarks of Universal Studios and Amblin Entertainment, Inc.
-- Daemon1, DennisNedry1993 and Inaki for initial modding attempts and documentation.
+- Jurassic World, Jurassic World Fallen Kingdom, Jurassic World Evolution,  Jurassic World Evolution 2 and their respective logos are trademarks of Universal Studios and Amblin Entertainment, Inc.
 
 ### Get in touch
 Some Discords where modding progress is discussed can be found here:
