@@ -189,7 +189,7 @@ Module.EnvironmentPrototype = {
 -- Merge default Managers with ACSE collected protos
 if GameDatabase.GetParkEnvironmentManagers then
 	for _sName, _tParams in pairs( GameDatabase.GetParkEnvironmentManagers() ) do
-		api.debug.Trace("acse Adding Manager: " .. _sName)
+		api.debug.Trace("ACSE Adding Manager: " .. _sName)
 		Module.EnvironmentPrototype['Managers'][_sName] = _tParams
 	end
 end
