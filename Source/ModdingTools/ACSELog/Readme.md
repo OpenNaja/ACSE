@@ -6,7 +6,7 @@ provides a log output to a shell that can be used to copy output from the game.
 
 This python script requires having Frida for python installed
 
-# pip install frida
+- pip install frida
 
 ## Usage
 
