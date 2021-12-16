@@ -118,7 +118,8 @@ Module.EnvironmentPrototype = {
 				StaffManagement = "Editors.StaffManagement.StaffManagementUIMode",
 				AssignStaffToTask = "Editors.Tasks.AssignStaffToTaskUIMode",
 				BuildingWithCustomisableGameplay = "Editors.InspectBuilding.BuildingWithCustomisableGameplayUIMode",
-				ResourcesResupply = "Editors.ResourcesResupply.ResourcesResupplyUIMode"},
+				ResourcesResupply = "Editors.ResourcesResupply.ResourcesResupplyUIMode"
+			},
 			InitialMode = "Select"
 		},
 		["Managers.EditModeManager"] = {
@@ -141,7 +142,8 @@ Module.EnvironmentPrototype = {
 				Capture = "Editors.Capture.CaptureMode",
 				IslandEntityPlace = "Editors.Test.IslandEntityPlaceMode",
 				TerritoryTest = "Editors.Test.TerritoryTestMode",
-				FixFoundationHeights = "Editors.Test.FixFoundationHeightsMode"},
+				FixFoundationHeights = "Editors.Test.FixFoundationHeightsMode"
+			},
 			InitialMode = "Select"
 		},
 		["Managers.ViewModeManager"] = {
@@ -158,7 +160,8 @@ Module.EnvironmentPrototype = {
 				RangerPatrol = "ViewModes.RangerPatrolViewMode",
 				Power = "ViewModes.PowerViewMode",
 				Weather = "ViewModes.WeatherViewMode",
-				Empty = "ViewModes.EmptyViewMode"},
+				Empty = "ViewModes.EmptyViewMode"
+			},
 			InitialMode = "Empty"
 		},
 		["Managers.InputDispatchManager"] = {

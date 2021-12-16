@@ -42,8 +42,6 @@ ACSEParkManager.Init = function(self, _tProperties, _tEnvironment)
 
     -- Implementing prefab compilation during de-serialization.
     local fnLoad = function(_tLoad, _nLoadedVersion, _tParams)
-        global.api.debug.Trace("* Loading ACSE version :" .. global.tostring(_nLoadedVersion))
-  
         -- We need to make any required prefab available before the island is loading and 
         -- other managers start instancing their entities.
         if ACSEParkManager.bInitOnSerialization == false then
