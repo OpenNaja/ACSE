@@ -43,6 +43,13 @@ end
 global.api.acse.Warning = function(msg)
     global.api.debug.Trace("-Wrn- " .. msg)
 end
+global.api.acse.Assert = function(cond, msg)
+    if cond == false then 
+        global.api.debug.Trace("-Assert- " .. global.tostring(msg) )
+    end
+    return cond
+end
+
 
 -- Tweakable support
 global.api.acse.tTweakables = {}
@@ -130,6 +137,16 @@ function stringSplit(text)
     return tout
 end
 
+-- @brief from &Time&Of&Day command string, returns tod
+function getCommandShortName(text)
+    local tout = {}
+    for match in sStr:gmatch( "&(.)") do
+        table.insert(tout, match:lower());
+    end
+    return global.table.concat(tout)
+end
+
+
 -- @brief adds a command to the list
 global.api.acse.RegisterShellCommand = function(_fn, sCmd, sDesc)
     --/ make a new command
@@ -194,6 +211,58 @@ global.api.acse.RunShellCommand = function(sCmd)
         local ret   = cmd._fn( api.game.GetEnvironment(), tArgs) -- Add args
     end
 end
+
+
+
+global.api.acseentity = {}
+global.api.acseentity.rawFindPrefab = global.api.entity.FindPrefab
+global.api.acseentity.rawCompilePrefab = global.api.entity.CompilePrefab
+global.api.acseentity.rawInstantiatePrefab = global.api.entity.InstantiatePrefab
+global.api.acseentity.rawAddComponentsToEntity = global.api.entity.AddComponentsToEntity
+
+global.api.acseentity.FindPrefab = function(sPrefab)
+    global.api.debug.Trace("*** entity.FindPrefab func called with " .. sPrefab)
+    return global.api.acseentity.rawFindPrefab(sPrefab)
+end
+global.api.acseentity.CompilePrefab = function(tPrefab, sPrefab)
+    global.api.debug.Trace("*** entity.CompilePrefab func called with " .. sPrefab)
+    return global.api.acseentity.rawCompilePrefab(tPrefab, sPrefab)
+end
+global.api.acseentity.InstantiatePrefab = function(sPrefab, arg1, arg2, arg3, arg4, arg5, arg6)
+
+    if sPrefab == "PhysicsWorld" then
+        local GameDatabase = require("Database.GameDatabase")
+        if GameDatabase.GetLuaPrefabs then
+            for _sName, _tParams in pairs( GameDatabase.GetLuaPrefabs() ) do
+                api.debug.Trace("ACSE compiling prefab: " .. global.tostring(_sName))
+                local cPrefab = global.api.entity.CompilePrefab(_tParams, _sName)
+                if cPrefab == nil then
+                    api.debug.Trace("ACSE error compiling prefab: " .. _sName)
+                end
+            end
+        end
+    end
+
+
+    local entityId = global.api.acseentity.rawInstantiatePrefab(sPrefab, arg1, arg2, arg3, arg4, arg5, arg6)
+    global.api.debug.Trace("InstantitePrefab() of " .. sPrefab .. " with entityId : " .. entityId)
+    return entityId
+end
+global.api.acseentity.AddComponentsToEntity = function(nEntityId, tComponents)
+    local ret = global.api.acseentity.rawAddComponentsToEntity(nEntityId, tComponents)
+    global.api.debug.Trace(
+        "*** entity.AddComponentsToEntity " ..
+            type(nEntityId) .. " " .. type(tComponents) .. " " .. type(ret) .. " "
+    )
+end
+
+global.api.entity = global.setmetatable(global.api.acseentity, {__index = global.api.entity})
+global.api.debug.Trace("+ api.entity patched")
+
+
+
+
+
 
 -- @brief add our custom databases
 ACSEDatabase.AddContentToCall = function(_tContentToCall)

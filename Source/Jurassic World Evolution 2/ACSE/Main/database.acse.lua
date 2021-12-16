@@ -44,6 +44,11 @@ ACSE.tDatabaseMethods   = {
 		return ACSE.tParkEnvironmentProtos['Managers']
 	end,
 
+  --/ Lua prefabs 
+	GetLuaPrefabs = function()
+		return ACSE.tLuaPrefabs
+	end,
+
 	--/ version info
 	GetACSEVersionString = function()
 		return api.acse.GetACSEVersionString()
@@ -66,6 +71,7 @@ ACSE.Init = function()
 
 	ACSE.tParkEnvironmentProtos  = { SearchPaths = {},	Managers = {} }
 	ACSE.tStartEnvironmentProtos = { SearchPaths = {},	Managers = {} }
+	ACSE.tLuaPrefabs             = {}
 
 	--/ Request Starting Screeen Managers from other mods
 	Main.CallOnContent("AddStartScreenManagers",  function(_sName, _tParams)
@@ -79,6 +85,16 @@ ACSE.Init = function()
 	Main.CallOnContent("AddParkManagers",  function(_sName, _tParams)
 		if type(_sName) == 'string' and type(_tParams) == 'table' then
 			ACSE.tParkEnvironmentProtos['Managers'][_sName] = _tParams
+		end
+	end
+	)
+
+	--/ Request Lua Prefabs from other mods
+	Main.CallOnContent("AddLuaPrefabs",  function(_sName, _tParams)
+		if type(_sName) == 'string' and type(_tParams) == 'table' then
+			global.api.debug.Trace("adding prefab " .. _sName)
+			global.api.debug.Assert(ACSE.tLuaPrefabs[_sName] == nil, "Duplicated Lua Prefab " .. _sName)
+			ACSE.tLuaPrefabs[_sName] = _tParams
 		end
 	end
 	)
