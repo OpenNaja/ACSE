@@ -219,7 +219,15 @@ ACSE.Init = function()
       end, 
       "Loadstring {string}", 
       "Loads and execute a Lua string (no spaces).\n"
-    ),       
+    ),
+  	api.debug.RegisterShellCommand(
+  		function(tEnv, tArgs)
+  				global.api.game.Quit(tArgs[1] or false)
+      end, 
+      "&Quit [{bool}]", 
+      "Quits the game. To force Quitting without prompting use true as argument.\n"
+    ),
+
   }
 
 end
