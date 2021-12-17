@@ -66,6 +66,20 @@ ACSE.tDatabaseMethods = {
 
 api.debug.Trace("ACSE " .. api.acse.GetACSEVersionString() .. " Running on " .. global._VERSION)
 
+-- @brief returns true if a string is any form of number, used in EPS command
+function IsNumeric( data )
+    if global.type(data) == "number" then
+        return true
+    elseif global.type(data) ~= "string" then
+        return false
+    end
+    local x, y = global.string.find(data, "[%d+][%.?][%d*]")
+    if x and x == 1 and y == global.string.len(data) then
+        return true
+    end
+    return false
+end
+
 -- @brief Database init
 ACSE.Init = function()
     ACSE._initLuaOverrides()
@@ -276,7 +290,9 @@ ACSE.Init = function()
 	                    global.api.debug.Trace(
 	                        "Binding: " .. global.tostring(tArgs[i])
 	                    )
-                      database.BindParameter(cPSInstance, global.tonumber(i - 2), tArgs[i])
+                      local value = tArgs[i]
+                      if IsNumeric(tArgs[i]) then value = global.tonumber(value) end
+                      database.BindParameter(cPSInstance, global.tonumber(i - 2), value)
                     end
                     database.BindComplete(cPSInstance)
                     database.Step(cPSInstance)

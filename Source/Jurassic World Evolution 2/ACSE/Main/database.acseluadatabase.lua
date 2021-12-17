@@ -154,12 +154,9 @@ end
 
 -- @brief adds a command to the list
 global.api.acsedebug.RegisterShellCommand = function(_fn, sCmd, sDesc)
-    global.api.debug.Trace("RegisterShellCommand: " .. sCmd)
 
     --/ Save the short command version
     local shortcut = getCommandShortName(sCmd)
-    global.api.debug.Trace("we do return")
-    global.api.debug.Trace("Shortcut: " .. global.tostring(shortcut))
 
     --/ make a new command
     local command = {}
