@@ -105,6 +105,7 @@ end
 
 -- // Shell commands support
 global.api.acsedebug.tShellCommands = {}
+global.api.acsedebug.tShellCommandsShort = {}
 
 -- @brief splits a string by ' ' character
 function Split(s, delimiter)
@@ -145,14 +146,21 @@ end
 -- @brief from &Time&Of&Day command string, returns tod
 function getCommandShortName(text)
     local tout = {}
-    for match in sStr:gmatch("&(.)") do
-        table.insert(tout, match:lower())
+    for match in text:gmatch("&(.)") do
+        global.table.insert(tout, match:lower())
     end
-    return global.table.concat(tout)
+    if #tout>0 then return global.table.concat(tout) else return nil end
 end
 
 -- @brief adds a command to the list
 global.api.acsedebug.RegisterShellCommand = function(_fn, sCmd, sDesc)
+    global.api.debug.Trace("RegisterShellCommand: " .. sCmd)
+
+    --/ Save the short command version
+    local shortcut = getCommandShortName(sCmd)
+    global.api.debug.Trace("we do return")
+    global.api.debug.Trace("Shortcut: " .. global.tostring(shortcut))
+
     --/ make a new command
     local command = {}
     command._fn = _fn
@@ -162,8 +170,12 @@ global.api.acsedebug.RegisterShellCommand = function(_fn, sCmd, sDesc)
     name = stringSplit(command._sCmd)[1]
     name = global.string.lower(name)
 
-    --/ save the tweakable
+    --/ save the command and shortcut version
     global.api.acsedebug.tShellCommands[name] = command
+    if shortcut then
+        global.api.acsedebug.tShellCommandsShort[shortcut] = name
+    end
+
     return global.api.acsedebug.tShellCommands[name]
 end
 
@@ -183,7 +195,9 @@ global.api.acsedebug.RunShellCommand = function(sCmd)
     name = global.string.lower(name)
     global.table.remove(tArgs, 1)
 
+    name = global.api.acsedebug.tShellCommandsShort[name] or name
     local cmd = global.api.acsedebug.tShellCommands[name]
+
     if cmd ~= nil then
         -- Convert Arg types
         tCArgs = stringSplit(cmd._sCmd)

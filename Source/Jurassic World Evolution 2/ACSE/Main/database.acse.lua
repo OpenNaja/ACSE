@@ -128,7 +128,7 @@ ACSE.Init = function()
                     tweakable:SetValue(tArgs[2])
                 end
             end,
-            "SetTweakable {string} {value}",
+            "&Set&Tweakable {string} {value}",
             "Changes the value of a tweakable.\n"
         ),
         api.debug.RegisterShellCommand(
@@ -140,7 +140,7 @@ ACSE.Init = function()
                     end
                 end
             end,
-            "ListTweakables [{string}]",
+            "&List&Tweakables [{string}]",
             "Prints a list of the current tweakables and its values. Specify a filter string to limit the list.\n"
         ),
         api.debug.RegisterShellCommand(
@@ -152,7 +152,7 @@ ACSE.Init = function()
                     end
                 end
             end,
-            "ListCommands [{string}]",
+            "&List&Commands [{string}]",
             "Prints a list of the current commands and its arguments. Specify a filter string to limit the list.\n"
         ),
         api.debug.RegisterShellCommand(
@@ -169,7 +169,7 @@ ACSE.Init = function()
                     global.api.debug.Trace("Help requires a command name as argument")
                 end
             end,
-            "Help {string}",
+            "&Help {string}",
             "Displays information about a command.\n"
         ),
         api.debug.RegisterShellCommand(
@@ -197,7 +197,7 @@ ACSE.Init = function()
                     global.api.debug.Trace("There was a problem running the Lua file.")
                 end
             end,
-            "Loadfile {string}",
+            "&Load&file {string}",
             "Loads and execute a Lua file from the game root folder, do not add path.\n"
         ),
         api.debug.RegisterShellCommand(
