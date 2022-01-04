@@ -211,7 +211,7 @@ ACSE.Init = function()
                     global.api.debug.Trace("There was a problem running the Lua file.")
                 end
             end,
-            "&Load&file {string}",
+            "&Load&File {string}",
             "Loads and execute a Lua file from the game root folder, do not add path.\n"
         ),
         api.debug.RegisterShellCommand(
