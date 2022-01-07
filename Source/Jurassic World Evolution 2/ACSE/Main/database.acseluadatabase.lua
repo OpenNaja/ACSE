@@ -21,7 +21,7 @@ global.api.debug.Trace("Database.ACSELuaDatabase.lua loaded")
 
 -- @brief setup a custom debug/trace system to use
 global.api.acse = {}
-global.api.acse.versionNumber = 0.602
+global.api.acse.versionNumber = 0.609
 global.api.acse.GetACSEVersionString = function()
     return global.tostring(global.api.acse.versionNumber)
 end
@@ -263,7 +263,7 @@ global.api.acseentity.InstantiatePrefab = function(sPrefab, ...)
     end
 
     local entityId = global.api.acseentity.rawInstantiatePrefab(sPrefab, ...)
-    global.api.debug.Trace("Entity.InstantitePrefab() of " .. sPrefab .. " with entityId : " .. entityId)
+    global.api.debug.Trace("Entity.InstantitePrefab() of " .. global.tostring(sPrefab) .. " with entityId : " .. entityId)
     return entityId
 end
 global.api.acseentity.AddComponentsToEntity = function(nEntityId, tComponents)
