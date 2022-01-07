@@ -21,7 +21,7 @@ global.api.debug.Trace("Database.ACSELuaDatabase.lua loaded")
 
 -- @brief setup a custom debug/trace system to use
 global.api.acse = {}
-global.api.acse.versionNumber = 0.602
+global.api.acse.versionNumber = 0.609
 global.api.acse.GetACSEVersionString = function()
     return global.tostring(global.api.acse.versionNumber)
 end

@@ -31,17 +31,13 @@ ACSEParkManager.Init = function(self, _tProperties, _tEnvironment)
     -- Our serialization client would store component and other related ACSE provided
     -- information. For now just creates the entry in the world serialization so we
     -- can initialize during loading.
-    local fnSave = function(_tSave, _tParams)
-        if _tParams.SerialisationType ~= (self.worldSerialisationAPI).Type_Island then
-            -- All island type, better ignore this one
-            return
-        end
+    local fnSave = function(_tSave)
         _tSave.tComponents = {}
         return
     end
 
     -- Implementing prefab compilation during de-serialization.
-    local fnLoad = function(_tLoad, _nLoadedVersion, _tParams)
+    local fnLoad = function(_tLoad, _nLoadedVersion)
         -- We need to make any required prefab available before the island is loading and
         -- other managers start instancing their entities.
         if ACSEParkManager.bInitOnSerialization == false then
