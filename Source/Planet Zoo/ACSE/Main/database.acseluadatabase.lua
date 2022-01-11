@@ -21,7 +21,7 @@ global.api.debug.Trace("Database.ACSELuaDatabase.lua loaded")
 
 -- @brief setup a custom debug/trace system to use
 global.api.acse = {}
-global.api.acse.versionNumber = 0.609
+global.api.acse.versionNumber = 0.614
 global.api.acse.GetACSEVersionString = function()
     return global.tostring(global.api.acse.versionNumber)
 end
@@ -149,12 +149,15 @@ function getCommandShortName(text)
     for match in text:gmatch("&(.)") do
         global.table.insert(tout, match:lower())
     end
-    if #tout>0 then return global.table.concat(tout) else return nil end
+    if #tout > 0 then
+        return global.table.concat(tout)
+    else
+        return nil
+    end
 end
 
 -- @brief adds a command to the list
 global.api.acsedebug.RegisterShellCommand = function(_fn, sCmd, sDesc)
-
     --/ Save the short command version
     local shortcut = getCommandShortName(sCmd)
 
@@ -244,10 +247,48 @@ global.api.acseentity.rawInstantiatePrefab = global.api.entity.InstantiatePrefab
 global.api.acseentity.rawAddComponentsToEntity = global.api.entity.AddComponentsToEntity
 
 global.api.acseentity.FindPrefab = function(sPrefab)
-    return global.api.acseentity.rawFindPrefab(sPrefab)
+    local tPrefab = global.api.acseentity.rawFindPrefab(sPrefab)
+    -- Return recursive changes to Components StandaloneScenerySerialization
+    return tPrefab
 end
+
+function tablelength(T)
+    local count = 0
+    for _ in global.pairs(T) do
+        count = count + 1
+    end
+    return count
+end
+
+function groupComponents(tPrefab, tComponentNames)
+    local tComponents = {}
+    for sName, tData in pairs(tPrefab.Components) do
+        if tComponentNames[sName] ~= nil then
+            tComponents[sName] = tData
+            tPrefab["Components"][sName] = nil
+        end
+    end
+
+    if tablelength(tComponents) > 0 then
+        tPrefab["Components"]["StandaloneScenerySerialisation"] = tComponents
+    end
+    if tPrefab["Children"] then
+        for sName, tData in pairs(tPrefab["Children"]) do
+            tPrefab["Children"][sName] = groupComponents(tData, tComponentNames)
+        end
+    end
+    return tPrefab
+end
+
 global.api.acseentity.CompilePrefab = function(tPrefab, sPrefab)
     -- global.api.debug.Trace("*** entity.CompilePrefab func called with " .. sPrefab)
+    -- Process recursively and move custom components to the 
+    -- StandaloneScenerySerialisation component
+    local GameDatabase = require("Database.GameDatabase")
+    tCustomComponentNames = GameDatabase.GetLuaComponents()
+    if tablelength(tCustomComponentNames) > 0 then
+        tPrefab = groupComponents(tPrefab, tCustomComponentNames)
+    end
     return global.api.acseentity.rawCompilePrefab(tPrefab, sPrefab)
 end
 
@@ -256,7 +297,7 @@ global.api.acseentity.InstantiatePrefab = function(sPrefab, ...)
     --/ at this moment the entity component is ready so we will rebuild
     --/ the rest of prefabs defined by other mods. This piece in particular
     --/ will come handy for prefabs required early in the loading process.
-    if sPrefab == "MainPhysicsWorld" then
+    if sPrefab == "PhysicsWorld" then
         local GameDatabase = require("Database.GameDatabase")
         if GameDatabase.GetLuaPrefabs then
             GameDatabase.BuildLuaPrefabs()
@@ -264,7 +305,9 @@ global.api.acseentity.InstantiatePrefab = function(sPrefab, ...)
     end
 
     local entityId = global.api.acseentity.rawInstantiatePrefab(sPrefab, ...)
-    global.api.debug.Trace("Entity.InstantitePrefab() of " .. global.tostring(sPrefab) .. " with entityId : " .. entityId)
+    global.api.debug.Trace(
+        "Entity.InstantitePrefab() of " .. global.tostring(sPrefab) .. " with entityId : " .. entityId
+    )
     return entityId
 end
 global.api.acseentity.AddComponentsToEntity = function(nEntityId, tComponents)

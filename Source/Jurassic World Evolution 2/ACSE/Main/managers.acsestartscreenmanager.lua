@@ -27,8 +27,8 @@ end
 -- @Brief Update function for this manager
 ACSEStartScreenManager.Advance = function(self, _nDeltaTime)
 
-    --// boolean if else then to track when to inject settings in the menu or the version 
-    --// in the UI. Can't do this on Activate since the world is the last to activate and 
+    --// boolean if else then to track when to inject settings in the menu or the version
+    --// in the UI. Can't do this on Activate since the world is the last to activate and
     --// will override any change.
     if self.worldScript then
     else
@@ -37,6 +37,12 @@ ACSEStartScreenManager.Advance = function(self, _nDeltaTime)
             self:_attachACSEVersionString()
         end
     end
+
+	--// Advance our custom component manager
+    local tWorldAPIs = api.world.GetWorldAPIs()
+	if tWorldAPIs.acsecomponentmanager then
+		tWorldAPIs.acsecomponentmanager:Advance(_nDeltaTime, _nUnscaledDeltaTime)
+	end
 
 end
 

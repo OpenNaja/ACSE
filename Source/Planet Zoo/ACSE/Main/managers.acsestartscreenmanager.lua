@@ -98,7 +98,12 @@ ACSEStartScreenManager.Activate = function(self)
 end
 
 -- @Brief Update function for this manager
-ACSEStartScreenManager.Advance = function(self, _nDeltaTime)
+ACSEStartScreenManager.Advance = function(self, _nDeltaTime, _nUnscaledDeltaTime)
+	--// Advance our custom component manager
+    local tWorldAPIs = api.world.GetWorldAPIs()
+	if tWorldAPIs.acsecomponentmanager then
+		tWorldAPIs.acsecomponentmanager:Advance(_nDeltaTime, _nUnscaledDeltaTime)
+	end
 end
 
 -- @Brief Deactivate function for this manager

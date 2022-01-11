@@ -58,10 +58,18 @@ end
 
 -- @Brief Update function for this manager
 ACSEParkManager.Advance = function(self, _nDeltaTime, _nUnscaledDeltaTime)
+    --api.debug.Trace("ACSEParkManager:Advance()")
+	--// Advance our custom component manager
+    local tWorldAPIs = api.world.GetWorldAPIs()
+	if tWorldAPIs.acsecomponentmanager then
+		tWorldAPIs.acsecomponentmanager:Advance(_nDeltaTime, _nUnscaledDeltaTime)
+	end
+
 end
 
 -- @Brief Activate function for this manager
 ACSEParkManager.Activate = function(self)
+    --api.debug.Trace("ACSEParkManager:Activate()")
     --/ Initialize prefabs if they haven't been intialized during de-serialization
     if ACSEParkManager.bInitOnSerialization == false then
         ACSEParkManager.bInitOnSerialization = true

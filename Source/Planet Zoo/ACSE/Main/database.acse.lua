@@ -25,6 +25,9 @@ ACSE.tStartEnvironmentProtos = {}
 -- List of lua Prefabs to populate from other mods
 ACSE.tLuaPrefabs = {}
 
+-- List of lua Components to populate from other mods
+ACSE.tLuaComponents = {}
+
 -- Definition of our own database methods
 ACSE.tDatabaseMethods = {
     --/ Park environment hook
@@ -47,6 +50,10 @@ ACSE.tDatabaseMethods = {
     GetLuaPrefabs = function()
         return ACSE.tLuaPrefabs
     end,
+    --/ Lua Components
+    GetLuaComponents = function()
+        return ACSE.tLuaComponents
+    end,
     --/ Lua prefabs
     BuildLuaPrefabs = function()
         for _sName, _tParams in pairs(ACSE.tLuaPrefabs) do
@@ -67,7 +74,7 @@ ACSE.tDatabaseMethods = {
 api.debug.Trace("ACSE " .. api.acse.GetACSEVersionString() .. " Running on " .. global._VERSION)
 
 -- @brief returns true if a string is any form of number, used in EPS command
-function IsNumeric( data )
+function IsNumeric(data)
     if global.type(data) == "number" then
         return true
     elseif global.type(data) ~= "string" then
@@ -90,7 +97,7 @@ ACSE.Init = function()
     ACSE.tStartEnvironmentProtos = {SearchPaths = {}, Managers = {}}
     ACSE.tLuaPrefabs = {}
 
-    --/ Request Starting Screeen Managers from other mods
+    --/ Request Starting Screen Managers from other mods
     Main.CallOnContent(
         "AddStartScreenManagers",
         function(_sName, _tParams)
@@ -118,6 +125,18 @@ ACSE.Init = function()
                 global.api.debug.Trace("adding prefab " .. _sName)
                 global.api.debug.Assert(ACSE.tLuaPrefabs[_sName] == nil, "Duplicated Lua Prefab " .. _sName)
                 ACSE.tLuaPrefabs[_sName] = _tParams
+            end
+        end
+    )
+
+    --/ Request Lua Components from other mods
+    Main.CallOnContent(
+        "AddLuaComponents",
+        function(_sName, _tParams)
+            if type(_sName) == "string" and type(_tParams) == "string" then
+                global.api.debug.Trace("adding component: " .. _sName)
+                global.api.debug.Assert(ACSE.tLuaComponents[_sName] == nil, "Duplicated Lua Component " .. _sName)
+                ACSE.tLuaComponents[_sName] = _tParams
             end
         end
     )
@@ -287,12 +306,12 @@ ACSE.Init = function()
                 local cPSInstance = database.GetPreparedStatementInstance(dbname, psname)
                 if cPSInstance ~= nil then
                     for i = 3, #tArgs, 1 do
-	                    global.api.debug.Trace(
-	                        "Binding: " .. global.tostring(tArgs[i])
-	                    )
-                      local value = tArgs[i]
-                      if IsNumeric(tArgs[i]) then value = global.tonumber(value) end
-                      database.BindParameter(cPSInstance, global.tonumber(i - 2), value)
+                        global.api.debug.Trace("Binding: " .. global.tostring(tArgs[i]))
+                        local value = tArgs[i]
+                        if IsNumeric(tArgs[i]) then
+                            value = global.tonumber(value)
+                        end
+                        database.BindParameter(cPSInstance, global.tonumber(i - 2), value)
                     end
                     database.BindComplete(cPSInstance)
                     database.Step(cPSInstance)
@@ -316,8 +335,25 @@ ACSE.Init = function()
             end,
             "&Quit [{bool}]",
             "Quits the game. To force Quitting without prompting use true as argument.\n"
+        ),
+        api.debug.RegisterShellCommand(
+            function(tEnv, tArgs)
+                global.api.game.Quit(true)
+            end,
+            "!&Q",
+            "Force quits the game.\n"
         )
+                
     }
+
+	--[[
+    local modname = "components.acsecomponentmanager" global.require(modname)
+    local tACSEComponentManager = global.package.preload[modname] or global.package.loaded[modname]
+	global.api.debug.Assert(tACSEComponentManager ~= nil, "ACSEComponentManager not found")
+    global.api.debug.Trace("Registering ACSEComponentManager")
+    global.package.preload["components.standalonesceneryserialisation"] = tACSEComponentManager
+    global.api.debug.Trace("Registered ACSEComponentManager")
+	]]
 end
 
 -- @brief Environment Shutdown
