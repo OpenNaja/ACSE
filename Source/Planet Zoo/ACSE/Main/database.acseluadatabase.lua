@@ -21,7 +21,7 @@ global.api.debug.Trace("Database.ACSELuaDatabase.lua loaded")
 
 -- @brief setup a custom debug/trace system to use
 global.api.acse = {}
-global.api.acse.versionNumber = 0.614
+global.api.acse.versionNumber = 0.615
 global.api.acse.GetACSEVersionString = function()
     return global.tostring(global.api.acse.versionNumber)
 end
@@ -236,7 +236,10 @@ global.api.acsedebug.RunShellCommand = function(sCmd)
         tEnv.output = 1
         tEnv.error = 2
 
-        local ret = cmd._fn(api.game.GetEnvironment(), tArgs) -- Add args
+        local bRet, sMsg = cmd._fn(api.game.GetEnvironment(), tArgs)
+        if bRet == false then
+            global.api.debug.Trace(sMsg)
+        end
     end
 end
 
@@ -282,7 +285,7 @@ end
 
 global.api.acseentity.CompilePrefab = function(tPrefab, sPrefab)
     -- global.api.debug.Trace("*** entity.CompilePrefab func called with " .. sPrefab)
-    -- Process recursively and move custom components to the 
+    -- Process recursively and move custom components to the
     -- StandaloneScenerySerialisation component
     local GameDatabase = require("Database.GameDatabase")
     tCustomComponentNames = GameDatabase.GetLuaComponents()

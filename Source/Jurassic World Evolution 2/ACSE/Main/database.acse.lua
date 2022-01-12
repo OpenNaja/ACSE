@@ -13,7 +13,9 @@ local pairs = pairs
 local type = type
 local ipairs = ipairs
 local next = global.next
+local string = global.string
 local table = require("Common.tableplus")
+local StringUtils = require("Common.stringUtils")
 local Main = require("Database.Main")
 local GameDatabase = require("Database.GameDatabase")
 local ACSE = module(...)
@@ -146,8 +148,7 @@ ACSE.Init = function()
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
                 if #tArgs ~= 2 then
-                    api.debug.Trace("SetTweakable requires two arguments")
-                    return
+                    return false, "SetTweakable requires two arguments"
                 end
 
                 tweakable = api.acsedebug.GetDebugTweakable(tArgs[1])
@@ -196,10 +197,10 @@ ACSE.Init = function()
                     if global.type(oCmd) == "table" then
                         global.api.debug.Trace(global.tostring(oCmd._sCmd) .. "\n" .. global.tostring(oCmd._sDesc))
                     else
-                        global.api.debug.Trace("Command " .. global.tostring(tArgs[1]) .. " not found.")
+                        return false, "Command " .. global.tostring(tArgs[1]) .. " not found."
                     end
                 else
-                    global.api.debug.Trace("Help requires a command name as argument")
+                    return false, "Help requires a command name as argument"
                 end
             end,
             "&Help {string}",
@@ -208,8 +209,7 @@ ACSE.Init = function()
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
                 if #tArgs ~= 1 then
-                    api.debug.Trace("Loadfile requires one argument")
-                    return
+                    return false, "Loadfile requires one argument, the name of the lua file.\n"
                 end
 
                 if
@@ -220,14 +220,14 @@ ACSE.Init = function()
                             if pf ~= nil then
                                 local result = pf()
                             else
-                                global.api.debug.Trace("Lua file not loaded (file not found or wrong syntax).")
+                                return false, "Lua file not loaded (file not found or wrong syntax).\n"
                             end
                         end
                     )
                  then
                     -- file loaded and ran fine
                 else
-                    global.api.debug.Trace("There was a problem running the Lua file.")
+                    return false, "There was a problem running the Lua file."
                 end
             end,
             "&Load&File {string}",
@@ -236,10 +236,7 @@ ACSE.Init = function()
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
                 if #tArgs ~= 1 then
-                    api.debug.Trace(
-                        "Loadstring requires one argument. If your Lua code includes spaces, use quotes to convert to a single string."
-                    )
-                    return
+                    return false, "Loadstring requires one argument. If your Lua code includes spaces, use quotes to convert to a single string.\n"
                 end
 
                 if
@@ -250,14 +247,14 @@ ACSE.Init = function()
                             if pf ~= nil then
                                 local result = pf()
                             else
-                                global.api.debug.Trace("Lua file not loaded (possibly wrong syntax).")
+                                return false, "Lua file not loaded (possibly wrong syntax)."
                             end
                         end
                     )
                  then
                     -- file loaded and ran fine
                 else
-                    global.api.debug.Trace("There was a problem running the Lua sequence.")
+                    return false, "There was a problem running the Lua sequence."
                 end
             end,
             "Loadstring {string}",
@@ -266,10 +263,7 @@ ACSE.Init = function()
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
                 if #tArgs < 2 then
-                    api.debug.Trace(
-                        "BindPreparedStatement requires at least two arguments: Database and prepared Statement Collection name."
-                    )
-                    return
+                    return false, "BindPreparedStatement requires at least two arguments: Database and prepared Statement Collection name."
                 end
 
                 -- Get access to the game database interface
@@ -291,10 +285,7 @@ ACSE.Init = function()
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
                 if #tArgs < 2 then
-                    api.debug.Trace(
-                        "ExecutePreparedSstatement requires at least two arguments: Database and prepared Statement name."
-                    )
-                    return
+                    return false, "ExecutePreparedSstatement requires at least two arguments: Database and prepared Statement name."
                 end
 
                 -- Get access to the game database interface
@@ -321,9 +312,7 @@ ACSE.Init = function()
                     local tRows = database.GetAllResults(cPSInstance, false)
                     local result = tRows or {}
                 else
-                    global.api.debug.Trace(
-                        "Unable to bind PreparedStatement, did you Bind the Prepared Statement collection first?"
-                    )
+                    return false, "Unable to bind PreparedStatement, did you Bind the Prepared Statement collection first?"
                 end
             end,
             "&Execute&Prepared&Statement {string} {string} [{value}] [{value}] [{value}] [{value}]",
@@ -340,20 +329,94 @@ ACSE.Init = function()
             function(tEnv, tArgs)
                 global.api.game.Quit(true)
             end,
-            "!&Q",
+            "QQ",
             "Force quits the game.\n"
-        )
+        ),
+        api.debug.RegisterShellCommand(
+            function(tEnv, tArgs)
+                if tArgs == nil or #tArgs ~= 1 or global.type(tArgs[1]) ~= "string" then
+                    return false, "Expected exactly one string argument, the module name (or a search string).\n"
+                end
 
+                local sModuleNamePattern = (string.lower)(tArgs[1])
+
+                -- get module list from package.loaded that contain the pattern in the name
+                local tLoadedModuleNames = global.api.debug.GetListOfLoadedModuleNames()
+
+                local tFilteredLoadedModuleNames = {}
+                _pattern = string.gsub(sModuleNamePattern, "%%", "")
+                for k, v in global.pairs(tLoadedModuleNames) do
+                    if StringUtils.StrMatchI(v, _pattern) then
+                        tFilteredLoadedModuleNames[#tFilteredLoadedModuleNames + 1] = v
+                    end
+                end
+
+                local nFoundModulesCount = #tFilteredLoadedModuleNames
+                if nFoundModulesCount < 1 then
+                    return false, 'Couldn\'t find a loaded module matching the pattern "' .. sModuleNamePattern .. '".'
+                end
+
+                -- Locating named modules
+                for i, sModuleName in ipairs(tFilteredLoadedModuleNames) do
+                    if sModuleNamePattern == (string.lower)(sModuleName) then
+                        tFilteredLoadedModuleNames = {sModuleName}
+                    end
+                end
+                nFoundModulesCount = #tFilteredLoadedModuleNames
+
+                if nFoundModulesCount > 1 then
+                    local allModulesList = (table.concat)(tFilteredLoadedModuleNames, "\n")
+                    return false, "Found " .. global.tostring(nFoundModulesCount) ..
+                          ' loaded modules matching the pattern "' .. sModuleNamePattern ..
+                          '". You need to be more specific. \nPossible modules:\n' .. allModulesList
+                end
+
+                -- load the new file and replace the Lua package system
+                local newfile = global.loadfile(tFilteredLoadedModuleNames[1] .. ".lua")
+                if newfile then
+                    global.package.preload[ tFilteredLoadedModuleNames[1] ] = newfile
+                    local a = global.require(tFilteredLoadedModuleNames[1])
+                    global.package.loaded[tFilteredLoadedModuleNames[1] ] = a
+                    global.package.preload[tFilteredLoadedModuleNames[1] ] = nil
+                else
+                    return false, "File " .. tFilteredLoadedModuleNames[1] .. ".lua not found"
+                end
+
+                -- try now reloading it
+                local bOk, sErrorMessage = api.debug.ReloadModule(tFilteredLoadedModuleNames[1])
+                if bOk then
+                    global.api.debug.Trace("Module '" .. tFilteredLoadedModuleNames[1] .. "' reloaded successfully.\n")
+                    return true
+                end
+                return false, sErrorMessage .. "\n"
+                
+            end,
+            "&Reload&Module {string}",
+            "Reloads the Lua module specified from the file system.\n"
+        ),
+        api.debug.RegisterShellCommand(
+            function(tEnv, tArgs)
+                if tArgs == nil or #tArgs ~= 1 or type(tArgs[1]) ~= "string" then
+                    return false, "Expected exactly one string argument, the module name, without .lua extesion.\n"
+                end
+
+                local sModuleName = string.lower(tArgs[1])
+
+                local newfile = global.loadfile(sModuleName .. ".lua")
+                if newfile ~= nil then
+                    global.package.preload[sModuleName] = newfile
+                    local a = global.require(sModuleName)
+                    global.package.preload[sModuleName] = nil
+                else
+                    return false, "Module import failed: " .. sModuleName .. ".lua not found\n"
+                end
+                global.api.debug.Trace("Module '" .. sModuleName .. "' imported successfully.\n")
+            end,
+            "&Import&File {string}",
+            "Imports a lua file to the lua sandbox (do not specify .lua extension).\n"
+        )
     }
 
-	--[[
-    local modname = "components.acsecomponentmanager" global.require(modname)
-    local tACSEComponentManager = global.package.preload[modname] or global.package.loaded[modname]
-	global.api.debug.Assert(tACSEComponentManager ~= nil, "ACSEComponentManager not found")
-    global.api.debug.Trace("Registering ACSEComponentManager")
-    global.package.preload["components.standalonesceneryserialisation"] = tACSEComponentManager
-    global.api.debug.Trace("Registered ACSEComponentManager")
-	]]
 end
 
 -- @brief Environment Shutdown
@@ -424,3 +487,4 @@ ACSE._shutdownLuaOverrides = function()
     api.debug = global.getmetatable(api.debug).__index
     api.entity = global.getmetatable(api.entity).__index
 end
+
