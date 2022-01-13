@@ -21,7 +21,7 @@ global.api.debug.Trace("Database.ACSELuaDatabase.lua loaded")
 
 -- @brief setup a custom debug/trace system to use
 global.api.acse = {}
-global.api.acse.versionNumber = 0.615
+global.api.acse.versionNumber = 0.616
 global.api.acse.GetACSEVersionString = function()
     return global.tostring(global.api.acse.versionNumber)
 end
@@ -296,11 +296,11 @@ global.api.acseentity.CompilePrefab = function(tPrefab, sPrefab)
 end
 
 global.api.acseentity.InstantiatePrefab = function(sPrefab, ...)
-    --/ Physics world is the first prefab being instantiated in any game,
+    --/ MainPhysics world is the first prefab being instantiated in any game,
     --/ at this moment the entity component is ready so we will rebuild
     --/ the rest of prefabs defined by other mods. This piece in particular
     --/ will come handy for prefabs required early in the loading process.
-    if sPrefab == "PhysicsWorld" then
+    if sPrefab == "MainPhysicsWorld" then
         local GameDatabase = require("Database.GameDatabase")
         if GameDatabase.GetLuaPrefabs then
             GameDatabase.BuildLuaPrefabs()

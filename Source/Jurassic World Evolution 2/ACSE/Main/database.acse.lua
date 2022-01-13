@@ -366,32 +366,42 @@ ACSE.Init = function()
 
                 if nFoundModulesCount > 1 then
                     local allModulesList = (table.concat)(tFilteredLoadedModuleNames, "\n")
-                    return false, "Found " .. global.tostring(nFoundModulesCount) ..
-                          ' loaded modules matching the pattern "' .. sModuleNamePattern ..
-                          '". You need to be more specific. \nPossible modules:\n' .. allModulesList
+                    return false, "Found " ..
+                        global.tostring(nFoundModulesCount) ..' loaded modules matching the pattern "' ..
+                        sModuleNamePattern .. '". You need to be more specific. \nPossible modules:\n' .. allModulesList
                 end
 
+                local sModuleName = tFilteredLoadedModuleNames[1]
                 -- load the new file and replace the Lua package system
-                local newfile = global.loadfile(tFilteredLoadedModuleNames[1] .. ".lua")
+                local newfile = global.loadfile(sModuleName .. ".lua")
                 if newfile then
-                    global.package.preload[ tFilteredLoadedModuleNames[1] ] = newfile
-                    local a = global.require(tFilteredLoadedModuleNames[1])
-                    global.package.loaded[tFilteredLoadedModuleNames[1] ] = a
-                    global.package.preload[tFilteredLoadedModuleNames[1] ] = nil
-                else
-                    return false, "File " .. tFilteredLoadedModuleNames[1] .. ".lua not found"
-                end
+                    global.package.preload[sModuleName] = newfile
+                    local a = global.require(sModuleName)
+                    global.package.loaded[sModuleName] = a
 
-                -- try now reloading it
-                local bOk, sErrorMessage = api.debug.ReloadModule(tFilteredLoadedModuleNames[1])
-                if bOk then
-                    global.api.debug.Trace("Module '" .. tFilteredLoadedModuleNames[1] .. "' reloaded successfully.\n")
-                    return true
+                    local fnMod, sErrorMessage = global.loadresource(sModuleName)
+                    if not fnMod then
+                        return false, "Resource not found: " .. sErrorMessage
+                    end
+
+                    local module = global.tryrequire(sModuleName)
+                    if module ~= nil then
+                      module.s_tInterfaces = nil
+                    end
+
+                    local bOk = nil
+                    bOk, sMsg = global.pcall(fnMod, sModuleName)
+
+                    if not bOk then
+                        return false, "Error reloading module: " .. global.tostring(sMsg)
+                    end
+
+                else
+                    return false, "File " .. sModuleName .. ".lua not found or wrong syntax."
                 end
-                return false, sErrorMessage .. "\n"
-                
+                global.api.debug.Trace("Module '" .. sModuleName .. "' reloaded successfully.\n")
             end,
-            "&Reload&Module {string}",
+            "&Load&Module {string}",
             "Reloads the Lua module specified from the file system.\n"
         ),
         api.debug.RegisterShellCommand(
@@ -401,20 +411,43 @@ ACSE.Init = function()
                 end
 
                 local sModuleName = string.lower(tArgs[1])
-
                 local newfile = global.loadfile(sModuleName .. ".lua")
                 if newfile ~= nil then
                     global.package.preload[sModuleName] = newfile
+                    global.package.loaded[sModuleName] = nil
                     local a = global.require(sModuleName)
-                    global.package.preload[sModuleName] = nil
+                    global.package.loaded[sModuleName] = a
+
+                    local fnMod, sErrorMessage = global.loadresource(sModuleName)
+                    if not fnMod then
+                        return false, "Resource not found: " .. sErrorMessage
+                    end
+
                 else
                     return false, "Module import failed: " .. sModuleName .. ".lua not found\n"
                 end
                 global.api.debug.Trace("Module '" .. sModuleName .. "' imported successfully.\n")
             end,
-            "&Import&File {string}",
+            "&Import&Module {string}",
             "Imports a lua file to the lua sandbox (do not specify .lua extension).\n"
-        )
+        ),
+        api.debug.RegisterShellCommand(
+            function(tEnv, tArgs)
+                if tArgs == nil or #tArgs ~= 1 or type(tArgs[1]) ~= "string" then
+                    return false, "Expected exactly one string argument, the module name, without .lua extesion.\n"
+                end
+                if global.package.preload[sModuleName] == nil and global.package.loaded[sModuleName] == nil then
+                    return false, "Module " .. sModuleName .. " not found.\n"
+                end
+
+                local sModuleName = string.lower(tArgs[1])
+                global.package.preload[sModuleName] = nil
+                global.package.loaded[sModuleName] = nil
+                global.api.debug.Trace("Module '" .. sModuleName .. "' removed successfully.\n")
+            end,
+            "&Remove&Module {string}",
+            "Removes a Lua module to the Lua sandbox (do not specify .lua extension).\n"
+        )        
     }
 
 end
