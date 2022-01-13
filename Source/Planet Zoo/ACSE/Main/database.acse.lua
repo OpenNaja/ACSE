@@ -67,6 +67,14 @@ ACSE.tDatabaseMethods = {
     GetACSEVersionString = function()
         return api.acse.GetACSEVersionString()
     end,
+    --/ dev path info
+    GetACSEDevPath = function()
+        return api.acse.GetACSEPath()
+    end,
+    --/ dev path info
+    SetACSEDevPath = function(_sPath)
+        return api.acse.SetACSEPath(_sPath)
+    end,
     --/ have access to the tweakables
     GetAllTweakables = function()
         return api.acsedebug.GetTweakables()
@@ -160,6 +168,8 @@ ACSE.Init = function()
                         tArgs[2] = global.tonumber(tArgs[2])
                     end
                     tweakable:SetValue(tArgs[2])
+                else 
+                    return false, "Tweakable " .. tArgs[1] .. " not found.\n"
                 end
             end,
             "&Set&Tweakable {string} {value}",
@@ -213,16 +223,16 @@ ACSE.Init = function()
                 end
 
                 local sModuleName = global.tostring(tArgs[1])
-				global.api.debug.Trace("Loading file: " .. sModuleName)
-				local pf, sMsg = global.loadfile(sModuleName .. ".lua")
-				if pf ~= nil then
+                global.api.debug.Trace("Loading file: " .. sModuleName)
+                local pf, sMsg = global.loadfile(api.acse.devpath .. sModuleName .. ".lua")
+                if pf ~= nil then
                     local bOk, sMsg = global.pcall(pf, sModuleName)
                     if bOk == false then
                         return false, global.tostring(sMsg) .. "\n"
                     end
-				else
-					return false, "Lua file not loaded: " .. global.tostring(sMsg) ..  "\n"
-				end
+                else
+                    return false, "Lua file not loaded: " .. global.tostring(sMsg) ..  "\n"
+                end
             end,
             "&Load&File {string}",
             "Loads and execute a Lua file from the game root folder, do not add path.\n"
@@ -358,30 +368,30 @@ ACSE.Init = function()
                         sModuleNamePattern .. '". You need to be more specific. \nPossible modules:\n' .. allModulesList
                 end
 
-				local sModuleName = tFilteredLoadedModuleNames[1]
+                local sModuleName = tFilteredLoadedModuleNames[1]
                 -- load the new file and replace the Lua package system
-                local newfile = global.loadfile(sModuleName .. ".lua")
+                local newfile = global.loadfile(api.acse.devpath .. sModuleName .. ".lua")
                 if newfile then
                     global.package.preload[sModuleName] = newfile
                     local a = global.require(sModuleName)
                     global.package.loaded[sModuleName] = a
 
-					local fnMod, sErrorMessage = global.loadresource(sModuleName)
-					if not fnMod then
-						return false, "Resource not found: " .. sErrorMessage
-					end
+                    local fnMod, sErrorMessage = global.loadresource(sModuleName)
+                    if not fnMod then
+                        return false, "Resource not found: " .. sErrorMessage
+                    end
 
-					local module = global.tryrequire(sModuleName)
-					if module ~= nil then
-					  module.s_tInterfaces = nil
-					end
+                    local module = global.tryrequire(sModuleName)
+                    if module ~= nil then
+                      module.s_tInterfaces = nil
+                    end
 
-					local bOk = nil
-					bOk, sMsg = global.pcall(fnMod, sModuleName)
+                    local bOk = nil
+                    bOk, sMsg = global.pcall(fnMod, sModuleName)
 
-					if not bOk then
-						return false, "Error reloading module: " .. global.tostring(sMsg)
-					end
+                    if not bOk then
+                        return false, "Error reloading module: " .. global.tostring(sMsg)
+                    end
 
                 else
                     return false, "File " .. sModuleName .. ".lua not found or wrong syntax."
@@ -398,12 +408,12 @@ ACSE.Init = function()
                 end
 
                 local sModuleName = string.lower(tArgs[1])
-                local newfile = global.loadfile(sModuleName .. ".lua")
+                local newfile = global.loadfile(api.acse.devpath .. sModuleName .. ".lua")
                 if newfile ~= nil then
                     global.package.preload[sModuleName] = newfile
                     global.package.loaded[sModuleName] = nil
                     local a = global.require(sModuleName)
-					global.package.loaded[sModuleName] = a
+                    global.package.loaded[sModuleName] = a
 
                     local fnMod, sErrorMessage = global.loadresource(sModuleName)
                     if not fnMod then
@@ -436,6 +446,7 @@ ACSE.Init = function()
             "Removes a Lua module to the Lua sandbox (do not specify .lua extension).\n"
         )        
     }
+
 end
 
 -- @brief Environment Shutdown
@@ -506,3 +517,4 @@ ACSE._shutdownLuaOverrides = function()
     api.debug = global.getmetatable(api.debug).__index
     api.entity = global.getmetatable(api.entity).__index
 end
+

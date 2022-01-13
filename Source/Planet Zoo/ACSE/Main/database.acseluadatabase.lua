@@ -19,16 +19,26 @@ local Vector2 = require("Vector2")
 
 global.api.debug.Trace("Database.ACSELuaDatabase.lua loaded")
 
--- @brief setup a custom debug/trace system to use
+-- @brief ACSE table setup
 global.api.acse = {}
-global.api.acse.versionNumber = 0.617
+global.api.acse.versionNumber = 0.621
 global.api.acse.GetACSEVersionString = function()
     return global.tostring(global.api.acse.versionNumber)
 end
 
+-- @brief ACSE dev file system used by loadfile, loadmodule, importmodule functions
+global.api.acse.devpath = "dev/Lua/"
+global.api.acse.GetACSEDevPath = function()
+    return global.tostring(global.api.acse.devpath)
+end
+global.api.acse.SetACSEDevPath = function(_sPath)
+    global.api.acse.devpath = _sPath
+end
+
+-- @brief setup a custom debug/trace system to use
 global.api.acsedebug = {}
 
--- @brief logging/tracing functions
+-- @brief logging/tracing functions. Export Trace as a CreateFile call for Frida console hooking
 global.api.acsedebug.Trace = function(msg)
     global.loadfile("acse :" .. msg)
 end
@@ -236,7 +246,7 @@ global.api.acsedebug.RunShellCommand = function(sCmd)
         tEnv.output = 1
         tEnv.error = 2
 
-        local bRet, sMsg = cmd._fn(api.game.GetEnvironment(), tArgs)
+        local bRet, sMsg = cmd._fn(api.game.GetEnvironment(), tArgs) 
         if bRet == false then
             global.api.debug.Trace(sMsg)
         end
@@ -285,7 +295,7 @@ end
 
 global.api.acseentity.CompilePrefab = function(tPrefab, sPrefab)
     -- global.api.debug.Trace("*** entity.CompilePrefab func called with " .. sPrefab)
-    -- Process recursively and move custom components to the
+    -- Process recursively and move custom components to the 
     -- StandaloneScenerySerialisation component
     local GameDatabase = require("Database.GameDatabase")
     tCustomComponentNames = GameDatabase.GetLuaComponents()
@@ -296,7 +306,7 @@ global.api.acseentity.CompilePrefab = function(tPrefab, sPrefab)
 end
 
 global.api.acseentity.InstantiatePrefab = function(sPrefab, ...)
-    --/ MainPhysics world is the first prefab being instantiated in any game,
+    --/ Physics world is the first prefab being instantiated in any game,
     --/ at this moment the entity component is ready so we will rebuild
     --/ the rest of prefabs defined by other mods. This piece in particular
     --/ will come handy for prefabs required early in the loading process.

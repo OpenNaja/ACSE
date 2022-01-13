@@ -67,6 +67,14 @@ ACSE.tDatabaseMethods = {
     GetACSEVersionString = function()
         return api.acse.GetACSEVersionString()
     end,
+    --/ dev path info
+    GetACSEDevPath = function()
+        return api.acse.GetACSEPath()
+    end,
+    --/ dev path info
+    SetACSEDevPath = function(_sPath)
+        return api.acse.SetACSEPath(_sPath)
+    end,
     --/ have access to the tweakables
     GetAllTweakables = function()
         return api.acsedebug.GetTweakables()
@@ -160,6 +168,8 @@ ACSE.Init = function()
                         tArgs[2] = global.tonumber(tArgs[2])
                     end
                     tweakable:SetValue(tArgs[2])
+                else 
+                    return false, "Tweakable " .. tArgs[1] .. " not found.\n"
                 end
             end,
             "&Set&Tweakable {string} {value}",
@@ -214,7 +224,7 @@ ACSE.Init = function()
 
                 local sModuleName = global.tostring(tArgs[1])
                 global.api.debug.Trace("Loading file: " .. sModuleName)
-                local pf, sMsg = global.loadfile(sModuleName .. ".lua")
+                local pf, sMsg = global.loadfile(api.acse.devpath .. sModuleName .. ".lua")
                 if pf ~= nil then
                     local bOk, sMsg = global.pcall(pf, sModuleName)
                     if bOk == false then
@@ -360,7 +370,7 @@ ACSE.Init = function()
 
                 local sModuleName = tFilteredLoadedModuleNames[1]
                 -- load the new file and replace the Lua package system
-                local newfile = global.loadfile(sModuleName .. ".lua")
+                local newfile = global.loadfile(api.acse.devpath .. sModuleName .. ".lua")
                 if newfile then
                     global.package.preload[sModuleName] = newfile
                     local a = global.require(sModuleName)
@@ -398,7 +408,7 @@ ACSE.Init = function()
                 end
 
                 local sModuleName = string.lower(tArgs[1])
-                local newfile = global.loadfile(sModuleName .. ".lua")
+                local newfile = global.loadfile(api.acse.devpath .. sModuleName .. ".lua")
                 if newfile ~= nil then
                     global.package.preload[sModuleName] = newfile
                     global.package.loaded[sModuleName] = nil

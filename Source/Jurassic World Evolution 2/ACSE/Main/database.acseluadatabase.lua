@@ -19,16 +19,26 @@ local Vector2 = require("Vector2")
 
 global.api.debug.Trace("Database.ACSELuaDatabase.lua loaded")
 
--- @brief setup a custom debug/trace system to use
+-- @brief ACSE table setup
 global.api.acse = {}
-global.api.acse.versionNumber = 0.617
+global.api.acse.versionNumber = 0.621
 global.api.acse.GetACSEVersionString = function()
     return global.tostring(global.api.acse.versionNumber)
 end
 
+-- @brief ACSE dev file system used by loadfile, loadmodule, importmodule functions
+global.api.acse.devpath = "dev/Lua/"
+global.api.acse.GetACSEDevPath = function()
+    return global.tostring(global.api.acse.devpath)
+end
+global.api.acse.SetACSEDevPath = function(_sPath)
+    global.api.acse.devpath = _sPath
+end
+
+-- @brief setup a custom debug/trace system to use
 global.api.acsedebug = {}
 
--- @brief logging/tracing functions
+-- @brief logging/tracing functions. Export Trace as a CreateFile call for Frida console hooking
 global.api.acsedebug.Trace = function(msg)
     global.loadfile("acse :" .. msg)
 end
