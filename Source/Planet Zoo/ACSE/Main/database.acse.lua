@@ -212,22 +212,16 @@ ACSE.Init = function()
                     return false, "Loadfile requires one argument, the name of the lua file (without the .lua extension).\n"
                 end
 
-				local status, errormsg = global.pcall(
-					function()
-						global.api.debug.Trace("Loading file: " .. global.tostring(tArgs[1]))
-						local pf = global.loadfile(tArgs[1] .. ".lua")
-						if pf ~= nil then
-							local result = pf()
-                            if result ~= nil then
-                                global.api.debug.Trace("result: " .. global.type(result))
-                            end
-						else
-							return false, "Lua file not loaded (file not found or wrong syntax).\n"
-						end
-					end
-				)
-				if not status then
-					return false, "There was a problem running the Lua file\n" .. global.tostring(errormsg)
+                local sModuleName = global.tostring(tArgs[1])
+				global.api.debug.Trace("Loading file: " .. sModuleName)
+				local pf, sMsg = global.loadfile(sModuleName .. ".lua")
+				if pf ~= nil then
+                    local bOk, sMsg = global.pcall(pf, sModuleName)
+                    if bOk == false then
+                        return false, global.tostring(sMsg) .. "\n"
+                    end
+				else
+					return false, "Lua file not loaded: " .. global.tostring(sMsg) ..  "\n"
 				end
             end,
             "&Load&File {string}",
@@ -239,22 +233,15 @@ ACSE.Init = function()
                     return false, "Loadstring requires one argument. If your Lua code includes spaces, use quotes to convert to a single string.\n"
                 end
 
-                if
-                    global.pcall(
-                        function()
-                            local luastr = "local global = _G local api = global.api " .. tArgs[1]
-                            local pf = global.loadstring(luastr)
-                            if pf ~= nil then
-                                local result = pf()
-                            else
-                                return false, "Lua file not loaded (possibly wrong syntax)."
-                            end
-                        end
-                    )
-                 then
-                    -- file loaded and ran fine
+                local luastr = "local global = _G local api = global.api " .. tArgs[1]
+                local pf, sMsg = global.loadstring(luastr)
+                if pf ~= nil then
+                    local bOk, sMsg = global.pcall(pf, sModuleName)
+                    if bOk == false then
+                        return false, global.tostring(sMsg) .. "\n"
+                    end
                 else
-                    return false, "There was a problem running the Lua sequence."
+                    return false, "error: " .. global.tostring(sMsg) ..  "\n"
                 end
             end,
             "Loadstring {string}",
