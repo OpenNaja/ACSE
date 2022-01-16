@@ -28,6 +28,8 @@ end
 
 -- @brief ACSE dev file system used by loadfile, loadmodule, importmodule functions
 global.api.acse.devpath = "dev/Lua/"
+global.api.acse.devmodule = global.loadfile("dev/Lua/init.lua")
+
 global.api.acse.GetACSEDevPath = function()
     return global.tostring(global.api.acse.devpath)
 end
@@ -275,10 +277,13 @@ end
 
 function groupComponents(tPrefab, tComponentNames)
     local tComponents = {}
-    for sName, tData in pairs(tPrefab.Components) do
-        if tComponentNames[sName] ~= nil then
-            tComponents[sName] = tData
-            tPrefab["Components"][sName] = nil
+    
+    if tPrefab['Components'] then 
+        for sName, tData in pairs(tPrefab.Components) do
+            if tComponentNames[sName] ~= nil then
+                tComponents[sName] = tData
+                tPrefab["Components"][sName] = nil
+            end
         end
     end
 
@@ -333,4 +338,10 @@ end
 -- @brief add our custom databases
 ACSEDatabase.AddContentToCall = function(_tContentToCall)
     table.insert(_tContentToCall, require("Database.ACSE"))
+    if global.api.acse.devmodule ~= nil then 
+        global.package.preload['acsedev'] = global.api.acse.devmodule
+        local devmod = require('acsedev')
+        global.package.preload['acsedev'] = nil
+        if devmod then table.insert(_tContentToCall, devmod ) end 
+    end
 end
