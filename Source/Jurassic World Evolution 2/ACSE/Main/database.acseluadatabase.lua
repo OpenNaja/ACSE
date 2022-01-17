@@ -12,7 +12,7 @@ local table = global.table
 local pairs = global.pairs
 local ipairs = global.ipairs
 local type = global.type
-local require = global.require
+local require = require
 local ACSEDatabase = module(...)
 local Vector3 = require("Vector3")
 local Vector2 = require("Vector2")
@@ -249,8 +249,8 @@ global.api.acsedebug.RunShellCommand = function(sCmd)
         tEnv.error = 2
 
         local bRet, sMsg = cmd._fn(api.game.GetEnvironment(), tArgs) 
-        if bRet == false then
-            global.api.debug.Trace(sMsg)
+        if sMsg ~= nil then
+            global.api.debug.Trace(global.tostring(sMsg))
         end
     end
 end
@@ -277,6 +277,7 @@ end
 
 function groupComponents(tPrefab, tComponentNames)
     local tComponents = {}
+    
     if tPrefab['Components'] then 
         for sName, tData in pairs(tPrefab.Components) do
             if tComponentNames[sName] ~= nil then
@@ -327,7 +328,6 @@ global.api.acseentity.InstantiatePrefab = function(sPrefab, ...)
     )
     return entityId
 end
-
 global.api.acseentity.AddComponentsToEntity = function(nEntityId, tComponents)
     local ret = global.api.acseentity.rawAddComponentsToEntity(nEntityId, tComponents)
     global.api.debug.Trace(

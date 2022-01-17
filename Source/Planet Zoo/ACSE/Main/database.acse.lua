@@ -107,49 +107,6 @@ ACSE.Init = function()
     ACSE.tStartEnvironmentProtos = {SearchPaths = {}, Managers = {}}
     ACSE.tLuaPrefabs = {}
 
-    --/ Request Starting Screen Managers from other mods
-    Main.CallOnContent(
-        "AddStartScreenManagers",
-        function(_sName, _tParams)
-            if type(_sName) == "string" and type(_tParams) == "table" then
-                ACSE.tStartEnvironmentProtos["Managers"][_sName] = _tParams
-            end
-        end
-    )
-
-    --/ Request Park Managers from other mods
-    Main.CallOnContent(
-        "AddParkManagers",
-        function(_sName, _tParams)
-            if type(_sName) == "string" and type(_tParams) == "table" then
-                ACSE.tParkEnvironmentProtos["Managers"][_sName] = _tParams
-            end
-        end
-    )
-
-    --/ Request Lua Prefabs from other mods
-    Main.CallOnContent(
-        "AddLuaPrefabs",
-        function(_sName, _tParams)
-            if type(_sName) == "string" and type(_tParams) == "table" then
-                global.api.debug.Trace("adding prefab " .. _sName)
-                global.api.debug.Assert(ACSE.tLuaPrefabs[_sName] == nil, "Duplicated Lua Prefab " .. _sName)
-                ACSE.tLuaPrefabs[_sName] = _tParams
-            end
-        end
-    )
-
-    --/ Request Lua Components from other mods
-    Main.CallOnContent(
-        "AddLuaComponents",
-        function(_sName, _tParams)
-            if type(_sName) == "string" and type(_tParams) == "string" then
-                global.api.debug.Trace("adding component: " .. _sName)
-                global.api.debug.Assert(ACSE.tLuaComponents[_sName] == nil, "Duplicated Lua Component " .. _sName)
-                ACSE.tLuaComponents[_sName] = _tParams
-            end
-        end
-    )
 
     -- Register our own custom shell commands
     ACSE.tShellCommands = {
@@ -225,6 +182,10 @@ ACSE.Init = function()
                 local sModuleName = global.tostring(tArgs[1])
                 global.api.debug.Trace("Loading file: " .. sModuleName)
                 local pf, sMsg = global.loadfile(api.acse.devpath .. sModuleName .. ".lua")
+                if pf == nil and string.find(str, "No such file or directory") then
+                    local sName = global.string.gsub(sModuleName, "%.", "/")
+                    pf, sMsg = global.loadfile(api.acse.devpath .. sName .. ".lua")
+                end
                 if pf ~= nil then
                     local bOk, sMsg = global.pcall(pf, sModuleName)
                     if bOk == false then
@@ -369,10 +330,15 @@ ACSE.Init = function()
                 end
 
                 local sModuleName = tFilteredLoadedModuleNames[1]
+
                 -- load the new file and replace the Lua package system
-                local newfile = global.loadfile(api.acse.devpath .. sModuleName .. ".lua")
-                if newfile then
-                    global.package.preload[sModuleName] = newfile
+                local pf, sMsg = global.loadfile(api.acse.devpath .. sModuleName .. ".lua")
+                if pf == nil and string.find(str, "No such file or directory") then
+                    local sName = global.string.gsub(sModuleName, "%.", "/")
+                    pf, sMsg = global.loadfile(api.acse.devpath .. sName .. ".lua")
+                end
+                if pf then
+                    global.package.preload[sModuleName] = pf
                     local a = global.require(sModuleName)
                     global.package.loaded[sModuleName] = a
 
@@ -394,9 +360,9 @@ ACSE.Init = function()
                     end
 
                 else
-                    return false, "File " .. sModuleName .. ".lua not found or wrong syntax."
+                    return false, "File " .. sModuleName .. ".lua not found or wrong syntax.\n" .. global.tostring(sMsg)
                 end
-                global.api.debug.Trace("Module '" .. sModuleName .. "' reloaded successfully.\n")
+                global.api.debug.Trace("Module '" .. sModuleName .. "' reloaded successfully.")
             end,
             "&Load&Module {string}",
             "Reloads the Lua module specified from the file system.\n"
@@ -406,11 +372,14 @@ ACSE.Init = function()
                 if tArgs == nil or #tArgs ~= 1 or type(tArgs[1]) ~= "string" then
                     return false, "Expected exactly one string argument, the module name, without .lua extesion.\n"
                 end
-
                 local sModuleName = string.lower(tArgs[1])
-                local newfile = global.loadfile(api.acse.devpath .. sModuleName .. ".lua")
-                if newfile ~= nil then
-                    global.package.preload[sModuleName] = newfile
+                local pf, sMsg = global.loadfile(api.acse.devpath .. sModuleName .. ".lua")
+                if pf == nil and string.find(str, "No such file or directory") then
+                    local sName = global.string.gsub(sModuleName, "%.", "/")
+                    pf, sMsg = global.loadfile(api.acse.devpath .. sName .. ".lua")
+                end
+                if pf ~= nil then
+                    global.package.preload[sModuleName] = pf
                     global.package.loaded[sModuleName] = nil
                     local a = global.require(sModuleName)
                     global.package.loaded[sModuleName] = a
@@ -419,11 +388,10 @@ ACSE.Init = function()
                     if not fnMod then
                         return false, "Resource not found: " .. sErrorMessage
                     end
-
                 else
-                    return false, "Module import failed: " .. sModuleName .. ".lua not found\n"
+                    return false, "Module import failed: " .. sModuleName .. ".lua not found\n" .. global.tostring(sMgs)
                 end
-                global.api.debug.Trace("Module '" .. sModuleName .. "' imported successfully.\n")
+                global.api.debug.Trace("Module '" .. sModuleName .. "' imported successfully.")
             end,
             "&Import&Module {string}",
             "Imports a lua file to the lua sandbox (do not specify .lua extension).\n"
@@ -433,11 +401,12 @@ ACSE.Init = function()
                 if tArgs == nil or #tArgs ~= 1 or type(tArgs[1]) ~= "string" then
                     return false, "Expected exactly one string argument, the module name, without .lua extesion.\n"
                 end
+                local sModuleName = string.lower(tArgs[1])
+
                 if global.package.preload[sModuleName] == nil and global.package.loaded[sModuleName] == nil then
                     return false, "Module " .. sModuleName .. " not found.\n"
                 end
 
-                local sModuleName = string.lower(tArgs[1])
                 global.package.preload[sModuleName] = nil
                 global.package.loaded[sModuleName] = nil
                 global.api.debug.Trace("Module '" .. sModuleName .. "' removed successfully.\n")
@@ -446,6 +415,50 @@ ACSE.Init = function()
             "Removes a Lua module to the Lua sandbox (do not specify .lua extension).\n"
         )        
     }
+
+    --/ Request Starting Screen Managers from other mods
+    Main.CallOnContent(
+        "AddStartScreenManagers",
+        function(_sName, _tParams)
+            if type(_sName) == "string" and type(_tParams) == "table" then
+                ACSE.tStartEnvironmentProtos["Managers"][string.lower(_sName)] = _tParams
+            end
+        end
+    )
+
+    --/ Request Park Managers from other mods
+    Main.CallOnContent(
+        "AddParkManagers",
+        function(_sName, _tParams)
+            if type(_sName) == "string" and type(_tParams) == "table" then
+                ACSE.tParkEnvironmentProtos["Managers"][string.lower(_sName)] = _tParams
+            end
+        end
+    )
+
+    --/ Request Lua Prefabs from other mods
+    Main.CallOnContent(
+        "AddLuaPrefabs",
+        function(_sName, _tParams)
+            if type(_sName) == "string" and type(_tParams) == "table" then
+                global.api.debug.Trace("adding prefab " .. _sName)
+                global.api.debug.Assert(ACSE.tLuaPrefabs[_sName] == nil, "Duplicated Lua Prefab " .. _sName)
+                ACSE.tLuaPrefabs[_sName] = _tParams
+            end
+        end
+    )
+
+    --/ Request Lua Components from other mods
+    Main.CallOnContent(
+        "AddLuaComponents",
+        function(_sName, _tParams)
+            if type(_sName) == "string" and type(_tParams) == "string" then
+                global.api.debug.Trace("adding component: " .. _sName)
+                global.api.debug.Assert(ACSE.tLuaComponents[_sName] == nil, "Duplicated Lua Component " .. _sName)
+                ACSE.tLuaComponents[_sName] = _tParams
+            end
+        end
+    )
 
 end
 

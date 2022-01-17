@@ -249,8 +249,8 @@ global.api.acsedebug.RunShellCommand = function(sCmd)
         tEnv.error = 2
 
         local bRet, sMsg = cmd._fn(api.game.GetEnvironment(), tArgs) 
-        if bRet == false then
-            global.api.debug.Trace(sMsg)
+        if sMsg ~= nil then
+            global.api.debug.Trace(global.tostring(sMsg))
         end
     end
 end
