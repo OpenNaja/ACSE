@@ -182,7 +182,7 @@ ACSE.Init = function()
                 local sModuleName = global.tostring(tArgs[1])
                 global.api.debug.Trace("Loading file: " .. sModuleName)
                 local pf, sMsg = global.loadfile(api.acse.devpath .. sModuleName .. ".lua")
-                if pf == nil and string.find(str, "No such file or directory") then
+                if pf == nil and string.find(sMsg, "No such file or directory") then
                     local sName = global.string.gsub(sModuleName, "%.", "/")
                     pf, sMsg = global.loadfile(api.acse.devpath .. sName .. ".lua")
                 end
@@ -333,7 +333,7 @@ ACSE.Init = function()
 
                 -- load the new file and replace the Lua package system
                 local pf, sMsg = global.loadfile(api.acse.devpath .. sModuleName .. ".lua")
-                if pf == nil and string.find(str, "No such file or directory") then
+                if pf == nil and string.find(sMsg, "No such file or directory") then
                     local sName = global.string.gsub(sModuleName, "%.", "/")
                     pf, sMsg = global.loadfile(api.acse.devpath .. sName .. ".lua")
                 end
@@ -374,7 +374,7 @@ ACSE.Init = function()
                 end
                 local sModuleName = string.lower(tArgs[1])
                 local pf, sMsg = global.loadfile(api.acse.devpath .. sModuleName .. ".lua")
-                if pf == nil and string.find(str, "No such file or directory") then
+                if pf == nil and string.find(sMsg, "No such file or directory") then
                     local sName = global.string.gsub(sModuleName, "%.", "/")
                     pf, sMsg = global.loadfile(api.acse.devpath .. sName .. ".lua")
                 end
