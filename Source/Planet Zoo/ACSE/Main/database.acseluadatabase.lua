@@ -21,7 +21,7 @@ global.api.debug.Trace("Database.ACSELuaDatabase.lua loaded")
 
 -- @brief ACSE table setup
 global.api.acse = {}
-global.api.acse.versionNumber = 0.623
+global.api.acse.versionNumber = 0.625
 global.api.acse.GetACSEVersionString = function()
     return global.tostring(global.api.acse.versionNumber)
 end
@@ -256,10 +256,16 @@ global.api.acsedebug.RunShellCommand = function(sCmd)
 end
 
 global.api.acseentity = {}
+global.api.acseentity.tLoadedEntities = {} -- Keep track of loaded entities for their options table
 global.api.acseentity.rawFindPrefab = global.api.entity.FindPrefab
 global.api.acseentity.rawCompilePrefab = global.api.entity.CompilePrefab
 global.api.acseentity.rawInstantiatePrefab = global.api.entity.InstantiatePrefab
 global.api.acseentity.rawAddComponentsToEntity = global.api.entity.AddComponentsToEntity
+global.api.acseentity.rawInstantiateDesc = global.api.entity.InstantiateDesc
+global.api.acseentity.rawCreateEntity = global.api.entity.CreateEntity
+--global.api.acseentity.rawDestroyPrefab = global.api.entity.DestroyPrefab
+
+--// @todo: consider adding CreateEntity and DestroyEntity hooks
 
 global.api.acseentity.FindPrefab = function(sPrefab)
     local tPrefab = global.api.acseentity.rawFindPrefab(sPrefab)
@@ -310,7 +316,22 @@ global.api.acseentity.CompilePrefab = function(tPrefab, sPrefab)
     return global.api.acseentity.rawCompilePrefab(tPrefab, sPrefab)
 end
 
-global.api.acseentity.InstantiatePrefab = function(sPrefab, ...)
+global.api.acseentity.propagateProperties = function(sPrefab, tProperties) 
+
+end
+
+--/
+--/ InstantiatePrefab arguments:
+--/ - prefab: table, or string, or lua prefab
+--/ - name: string
+--/ - token: userdata generated token
+--/ - transform
+--/ - parent: int entity ID of parent
+--/ - attach: boolean attach to parent entity, I've seen nill with parent too so nope
+--/ - properties: table 
+--/ - entityID: int, if not null then entity ID for this instance
+--/
+global.api.acseentity.InstantiatePrefab = function(sPrefab, sName, uToken, vTransform, nParent, bAttach, tProperties, nInstanceID)
     --/ Physics world is the first prefab being instantiated in any game,
     --/ at this moment the entity component is ready so we will rebuild
     --/ the rest of prefabs defined by other mods. This piece in particular
@@ -322,16 +343,55 @@ global.api.acseentity.InstantiatePrefab = function(sPrefab, ...)
         end
     end
 
-    local entityId = global.api.acseentity.rawInstantiatePrefab(sPrefab, ...)
+    local entityId = global.api.acseentity.rawInstantiatePrefab(sPrefab, sName, uToken, vTransform, nParent, bAttach, tProperties, nInstanceID)
+
+    --/ Store the entity creation information to using it when its components are added
+    if entityId then
+        -- we can use the API to get the rest of the data from the Instance ID
+        global.api.acseentity.tLoadedEntities[entityId] = { sPrefab = sPrefab, tProperties = tProperties}
+    end
+
     global.api.debug.Trace(
         "Entity.InstantitePrefab() of " .. global.tostring(sPrefab) .. " with entityId : " .. entityId
     )
+
     return entityId
 end
-global.api.acseentity.AddComponentsToEntity = function(nEntityId, tComponents)
-    local ret = global.api.acseentity.rawAddComponentsToEntity(nEntityId, tComponents)
+
+--// Changes are this is to instantiate a descendant of a prefab by name
+global.api.acseentity.InstantiateDesc = function(...)
+    local arg = {...}
+    for i,v in global.ipairs(arg) do
+        global.api.debug.Trace("arg : " .. global.tostring(v))
+    end
+
+    local entityId = global.api.acseentity.rawInstantiateDesc(...)
     global.api.debug.Trace(
-        "Entity.AddComponentsToEntity() " .. type(nEntityId) .. " " .. type(tComponents) .. " " .. type(ret) .. " "
+        "Entity.InstantiteDesc() with entityId : " .. global.tostring(entityId)
+    )
+
+    return entityId
+end
+
+global.api.acseentity.CreateEntity = function(...)
+    local arg = {...}
+    for i,v in global.ipairs(arg) do
+        global.api.debug.Trace("arg : " .. global.tostring(v))
+    end
+    local entityId = global.api.acseentity.rawCreateEntity(...)
+    global.api.debug.Trace(
+        "Entity.CreateEntity()  with entityId : " .. global.tostring(entityId)
+    )
+
+    return entityId
+end
+
+
+
+global.api.acseentity.AddComponentsToEntity = function(nEntityId, tComponents, uToken)
+    local ret = global.api.acseentity.rawAddComponentsToEntity(nEntityId, tProperties)
+    global.api.debug.Trace(
+        "Entity.AddComponentsToEntity() " .. type(nEntityId) .. " C " .. type(tComponents) .. " T " .. type(uToken) .. " > " .. type(ret) .. " "
     )
 end
 

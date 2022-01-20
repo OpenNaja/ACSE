@@ -48,18 +48,30 @@ ACSE.tDatabaseMethods = {
     GetParkEnvironmentManagers = function()
         return ACSE.tParkEnvironmentProtos["Managers"]
     end,
-    --/ Lua prefabs
-    GetLuaPrefabs = function()
-        return ACSE.tLuaPrefabs
-    end,
     --/ Lua Components
     GetLuaComponents = function()
         return ACSE.tLuaComponents
     end,
     --/ Lua prefabs
+    GetLuaPrefabs = function()
+        return ACSE.tLuaPrefabs
+    end,
+    --/ Lua prefabs
+    GetLuaPrefab = function(_sName)
+        global.api.debug.Assert(fales, "ACSE trying to build prefab: " .. _sName)
+        return ACSE.tLuaPrefabs[_sName] or nil
+    end,
+    --/ Lua prefabs
     BuildLuaPrefabs = function()
         for _sName, _tParams in pairs(ACSE.tLuaPrefabs) do
             local cPrefab = global.api.entity.CompilePrefab(_tParams, _sName)
+            global.api.debug.Assert(cPrefab ~= nil, "ACSE error compiling prefab: " .. _sName)
+        end
+    end,
+    BuildLuaPrefab = function(_sName)
+        global.api.debug.Assert(ACSE.tLuaPrefabs[_sName] ~= nil, "ACSE trying to build missing prefab: " .. _sName)
+        if ACSE.tLuaPrefabs[_sName] then
+            local cPrefab = global.api.entity.CompilePrefab(ACSE.tLuaPrefabs[_sName], _sName)
             global.api.debug.Assert(cPrefab ~= nil, "ACSE error compiling prefab: " .. _sName)
         end
     end,
@@ -186,7 +198,7 @@ ACSE.Init = function()
                     local sName = global.string.gsub(sModuleName, "%.", "/")
                     pf, sMsg = global.loadfile(api.acse.devpath .. sName .. ".lua")
                 end
-                if pf ~= nil then
+                if pf ~= nil and global.type(pf) == 'function' then
                     local bOk, sMsg = global.pcall(pf, sModuleName)
                     if bOk == false then
                         return false, global.tostring(sMsg) .. "\n"
@@ -522,11 +534,17 @@ ACSE._initLuaOverrides = function()
     local entity = global.api.entity
     global.api.debug = global.setmetatable(global.api.acsedebug, {__index = rdebug})
     global.api.entity = global.setmetatable(global.api.acseentity, {__index = entity})
+
+    -- and lua Init
+    global.api.entity.tLoadedEntities = {}
+
 end
 
 -- @Brief Undo all Lua changes so the game exists gracefully
 ACSE._shutdownLuaOverrides = function()
     --  Perform API/Lua clean up
+    api.entity.tLoadedEntities = {}
+
     api.debug = global.getmetatable(api.debug).__index
     api.entity = global.getmetatable(api.entity).__index
 end
