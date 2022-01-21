@@ -48,6 +48,10 @@ ACSE.tDatabaseMethods = {
     GetParkEnvironmentManagers = function()
         return ACSE.tParkEnvironmentProtos["Managers"]
     end,
+    --/ sql databases
+    GetNamedDatabases = function()
+        return global.api.acsedatabase.tDatabases
+    end,
     --/ Lua Components
     GetLuaComponents = function()
         return ACSE.tLuaComponents
@@ -58,21 +62,19 @@ ACSE.tDatabaseMethods = {
     end,
     --/ Lua prefabs
     GetLuaPrefab = function(_sName)
-        global.api.debug.Assert(fales, "ACSE trying to build prefab: " .. _sName)
+        global.api.debug.Assert(ACSE.tLuaPrefabs[_sName] ~= nil, "ACSE trying to access a missing prefab: " .. _sName)
         return ACSE.tLuaPrefabs[_sName] or nil
     end,
     --/ Lua prefabs
     BuildLuaPrefabs = function()
         for _sName, _tParams in pairs(ACSE.tLuaPrefabs) do
             local cPrefab = global.api.entity.CompilePrefab(_tParams, _sName)
-            global.api.debug.Assert(cPrefab ~= nil, "ACSE error compiling prefab: " .. _sName)
         end
     end,
     BuildLuaPrefab = function(_sName)
-        global.api.debug.Assert(ACSE.tLuaPrefabs[_sName] ~= nil, "ACSE trying to build missing prefab: " .. _sName)
+        global.api.debug.Assert(ACSE.tLuaPrefabs[_sName] ~= nil, "ACSE trying to build a missing prefab: " .. _sName)
         if ACSE.tLuaPrefabs[_sName] then
             local cPrefab = global.api.entity.CompilePrefab(ACSE.tLuaPrefabs[_sName], _sName)
-            global.api.debug.Assert(cPrefab ~= nil, "ACSE error compiling prefab: " .. _sName)
         end
     end,
     --/ version info
@@ -113,7 +115,7 @@ end
 ACSE.Init = function()
     ACSE._initLuaOverrides()
 
-    global.api.debug.Trace("ACSE:Init()")
+    global.api.debug.Trace("ACSE:Init() running in " .. global.tostring( global.api.game.GetGameName() ))
 
     ACSE.tParkEnvironmentProtos = {SearchPaths = {}, Managers = {}}
     ACSE.tStartEnvironmentProtos = {SearchPaths = {}, Managers = {}}
@@ -187,6 +189,47 @@ ACSE.Init = function()
         ),
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
+                global.api.debug.Trace("Rebuilding custom prefabs..")
+                for k, v in global.pairs(GameDatabase.GetLuaPrefabs()) do
+                    if (tArgs[1] == nil or global.string.match(k, tArgs[1])) then
+                        global.api.entity.CompilePrefab(v, k)
+                    end
+                end
+                global.api.debug.Trace("Done.")
+                return true, nil
+            end,
+            "&Rebuild&Custom&Prefabs [{string}]",
+            "Rebuild all custom prefabs containing the specified optional string from the ACSE prefabs table.\n"
+        ),          
+        api.debug.RegisterShellCommand(
+            function(tEnv, tArgs)
+                global.api.debug.Trace("Custom Prefabs:")
+                for k, v in global.pairs(GameDatabase.GetLuaPrefabs()) do
+                    if (tArgs[1] == nil or global.string.match(k, tArgs[1])) then
+                        global.api.debug.Trace(" - " .. global.tostring(k))
+                    end
+                end
+                return true, nil
+            end,
+            "&List&Custom&Prefabs [{string}]",
+            "List all custom prefabs containing the specified optional string.\n"
+        ),          
+        api.debug.RegisterShellCommand(
+            function(tEnv, tArgs)
+                global.api.debug.Trace("Game Prefabs:")
+                local tPrefabs = global.api.entity.EnumerateRootPrefabs()
+                for _, k in global.ipairs(tPrefabs) do
+                    if (tArgs[1] == nil or global.string.match(k, tArgs[1])) then
+                        global.api.debug.Trace(" - " .. global.tostring(k))
+                    end
+                end
+                return true, nil
+            end,
+            "&List&Prefabs [{string}]",
+            "List all existing prefabs containing the specified optional string.\n"
+        ), 
+        api.debug.RegisterShellCommand(
+            function(tEnv, tArgs)
                 if #tArgs ~= 1 then
                     return false, "Loadfile requires one argument, the name of the lua file (without the .lua extension).\n"
                 end
@@ -213,7 +256,7 @@ ACSE.Init = function()
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
                 if #tArgs ~= 1 then
-                    return false, "Loadstring requires one argument. If your Lua code includes spaces, use quotes to convert to a single string.\n"
+                    return false, "Lua requires one argument. If your Lua code includes spaces, use quotes to convert to a single string.\n"
                 end
 
                 local luastr = "local global = _G local api = global.api " .. tArgs[1]
@@ -227,8 +270,63 @@ ACSE.Init = function()
                     return false, "error: " .. global.tostring(sMsg) ..  "\n"
                 end
             end,
-            "Loadstring {string}",
-            "Loads and execute a Lua string (no spaces).\n"
+            "Lua {string}",
+            "Loads and execute a Lua string within quotes.\n"
+        ),
+        api.debug.RegisterShellCommand(
+            function(tEnv, tArgs)
+
+                global.api.debug.Trace("Named Databases")
+                for k, v in global.pairs(GameDatabase.GetNamedDatabases()) do
+                    if (tArgs[1] == nil or global.string.match(k, tArgs[1])) then
+                        global.api.debug.Trace(" - " .. global.tostring(k))
+                    end
+                end
+
+                return true, nil
+            end,
+            "&List&Databases [{string}]",
+            "List all named databases containing the specified optional string.\n"
+        ),        
+        api.debug.RegisterShellCommand(
+            function(tEnv, tArgs)
+                if #tArgs < 2 then
+                    return false, "Execute SQL requires at least two arguments: Database and 'SQL query'."
+                end
+
+                -- Get access to the game database interface
+                local database = global.api.database
+                local dbname = tArgs[1]
+                local query  = tArgs[2]
+                local readon = tArgs[3] or false
+
+                if not database.NamedDatabaseExists(dbname) then return false, "Database " .. dbname .. " does not exist" end
+                local bOldReadonly = database.GetReadOnly(dbname)
+                database.SetReadOnly(dbname, readon)
+
+                -- We need to bind our new Prepared Statement collection to the Buildings database before
+                -- we can use any of its statements.
+                local cQuery  = database.ExecuteSQL(dbname, query)
+                if cQuery == nil then return false, "SQL Error: malformed query." end
+
+                local bRet = false 
+                local sRet = "SQL Error: problem executing SQL query"
+
+                if database.Step(cQuery) == true then
+                    local tResult = database.GetAllResults(cQuery, true)
+                    if global.type(tResult) == 'table' then 
+                        sRet = table.tostring(tResult, nil, nil, nil, true)
+                        bRet = true
+                    end
+                end
+
+                -- clean up and restore read only state
+                database.Reset(cQuery, true)
+                database.SetReadOnly(dbname, bReadonly)
+                return bRet, sRet
+            end,
+            "Execute&S&Q&L {string} {string} [{bool}]",
+            "Executes a SQL on the selected database, optionally enable write mode on the database.\n"
         ),
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
@@ -281,6 +379,9 @@ ACSE.Init = function()
                     -- @TODO: Convert result to a global value accessible later
                     local tRows = database.GetAllResults(cPSInstance, false)
                     local result = tRows or {}
+                    if global.type(tResult) == 'table' then 
+                        return true, table.tostring(tResult, nil, nil, nil, true)
+                    end
                 else
                     return false, "Unable to bind PreparedStatement, did you Bind the Prepared Statement collection first?"
                 end
@@ -530,22 +631,27 @@ ACSE._initLuaOverrides = function()
     global.api.debug.Trace("Initializing lua overrides")
 
     -- Perform Lua override
-    local rdebug = global.api.debug
-    local entity = global.api.entity
-    global.api.debug = global.setmetatable(global.api.acsedebug, {__index = rdebug})
-    global.api.entity = global.setmetatable(global.api.acseentity, {__index = entity})
+    local rdebug   = global.api.debug
+    local entity   = global.api.entity
+    local database = global.api.database
 
-    -- and lua Init
-    global.api.entity.tLoadedEntities = {}
+    api.debug      = global.setmetatable(api.acsedebug,    {__index = rdebug  })
+    api.entity     = global.setmetatable(api.acseentity,   {__index = entity  })
+    api.database   = global.setmetatable(api.acsedatabase, {__index = database})
 
+    -- other Inits
+    api.entity.tLoadedEntities = {}
+    api.database.tDatabases    = {}
 end
 
 -- @Brief Undo all Lua changes so the game exists gracefully
 ACSE._shutdownLuaOverrides = function()
-    --  Perform API/Lua clean up
+    --  Perform clean ups
+    api.database.tDatabases    = {}
     api.entity.tLoadedEntities = {}
 
-    api.debug = global.getmetatable(api.debug).__index
-    api.entity = global.getmetatable(api.entity).__index
+    api.database  = global.getmetatable(api.database).__index
+    api.entity    = global.getmetatable(api.entity  ).__index
+    api.debug     = global.getmetatable(api.debug   ).__index
 end
 

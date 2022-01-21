@@ -1,13 +1,30 @@
 from __future__ import print_function
 import frida
 import sys
+import os
 
 def on_message(message, data):
     print("[%s] => %s" % (message, data))
 
+def on_detached(message, data):
+    if message == 'process-terminated':
+        sys.exit(1)
+
+def init(target_process):
+    pass
+
+
 def main(target_process):
     print('Looking for process..');
-    session = frida.attach(target_process)
+    loopwait = False
+    while loopwait == False:
+        try:
+            session = frida.attach(target_process)
+            loopwait = True
+        except:
+            pass
+
+    os.system('cls')
 
     script = session.create_script("""
 
@@ -33,8 +50,9 @@ def main(target_process):
 
 """)
     script.on('message', on_message)
+    session.on('detached', on_detached)
     script.load()
-    print("[!] Ctrl+D on UNIX, Ctrl+Z on Windows/cmd.exe to stop.\n\n")
+    print("[!] Ctrl+D on UNIX, Ctrl+C or Ctrl+Z on Windows/cmd.exe to stop.\n\n")
     sys.stdin.read()
     session.detach()
 

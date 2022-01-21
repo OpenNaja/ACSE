@@ -21,7 +21,7 @@ global.api.debug.Trace("Database.ACSELuaDatabase.lua loaded")
 
 -- @brief ACSE table setup
 global.api.acse = {}
-global.api.acse.versionNumber = 0.625
+global.api.acse.versionNumber = 0.626
 global.api.acse.GetACSEVersionString = function()
     return global.tostring(global.api.acse.versionNumber)
 end
@@ -313,7 +313,9 @@ global.api.acseentity.CompilePrefab = function(tPrefab, sPrefab)
     if tablelength(tCustomComponentNames) > 0 then
         tPrefab = groupComponents(tPrefab, tCustomComponentNames)
     end
-    return global.api.acseentity.rawCompilePrefab(tPrefab, sPrefab)
+    local ret = global.api.acseentity.rawCompilePrefab(tPrefab, sPrefab)
+    if ret == nil then global.api.debug.Error("Error compiling prefab: " .. global.tostring(sPrefab)) end
+    return ret
 end
 
 global.api.acseentity.propagateProperties = function(sPrefab, tProperties) 
@@ -336,7 +338,13 @@ global.api.acseentity.InstantiatePrefab = function(sPrefab, sName, uToken, vTran
     --/ at this moment the entity component is ready so we will rebuild
     --/ the rest of prefabs defined by other mods. This piece in particular
     --/ will come handy for prefabs required early in the loading process.
-    if sPrefab == "PhysicsWorld" then
+
+
+    --/ Game default physics entity is PhysicsWorld, however in Planet Zoo this is renamed to MainPhysicsWorld
+    local sPyhsicsPrefab = 'PhysicsWorld'
+    if global.api.game.GetGameName() == "Planet Zoo" then sPyhsicsPrefab = 'MainPhysicsWorld' end
+
+    if sPrefab == sPyhsicsPrefab then
         local GameDatabase = require("Database.GameDatabase")
         if GameDatabase.GetLuaPrefabs then
             GameDatabase.BuildLuaPrefabs()
@@ -385,13 +393,54 @@ global.api.acseentity.CreateEntity = function(...)
 end
 
 
-
 global.api.acseentity.AddComponentsToEntity = function(nEntityId, tComponents, uToken)
     local ret = global.api.acseentity.rawAddComponentsToEntity(nEntityId, tProperties)
     global.api.debug.Trace(
         "Entity.AddComponentsToEntity() " .. type(nEntityId) .. " C " .. type(tComponents) .. " T " .. type(uToken) .. " > " .. type(ret) .. " "
     )
 end
+
+
+--//
+--// Provide debug database support
+--//
+global.api.acsedatabase = {}
+global.api.acsedatabase.tDatabases = {} -- Keep track of databases and prepared statements
+global.api.acsedatabase.rawCreateEmptyNamedDatabase = global.api.database.CreateEmptyNamedDatabase
+global.api.acsedatabase.rawLoadAndNameDatabase      = global.api.database.LoadAndNameDatabase
+global.api.acsedatabase.rawUnloadNamedDatabase      = global.api.database.UnloadNamedDatabase
+global.api.acsedatabase.rawDiscardDatabaseResources = global.api.database.DiscardDatabaseResources
+global.api.acsedatabase.rawMergeChildDatabase       = global.api.database.MergeChildDatabase
+
+global.api.acsedatabase.CreateEmptyNamedDatabase = function(sName, ...)
+    local ret = global.api.acsedatabase.rawCreateEmptyNamedDatabase(sName, ...)
+    if ret then global.api.acsedatabase.tDatabases[sName] = {} end
+    return ret
+end
+
+global.api.acsedatabase.LoadAndNameDatabase = function(sSymbol, sName, ...)
+    local ret = global.api.acsedatabase.rawLoadAndNameDatabase(sSymbol, sName, ...)
+    if ret then global.api.acsedatabase.tDatabases[sName] = {} end
+    return ret
+end
+
+global.api.acsedatabase.UnloadNamedDatabase = function(sName, ...)
+    local ret = global.api.acsedatabase.rawUnloadNamedDatabase(sName, ...)
+    global.api.acsedatabase.tDatabases[sName] = nil
+    return ret
+end
+
+--[[ Found not to be necessary
+global.api.acsedatabase.DiscardDatabaseResources = function(sName, ...)
+    local ret = global.api.acsedatabase.rawDiscardDatabaseResources(sName, ...)
+    return ret
+end
+
+global.api.acsedatabase.MergeChildDatabase = function(sMainName, sContentName, sMergeRule)
+    local ret = global.api.acsedatabase.rawMergeChildDatabase(sMainName, sContentName, sMergeRule)
+    return ret
+end
+]]
 
 -- @brief add our custom databases
 ACSEDatabase.AddContentToCall = function(_tContentToCall)
