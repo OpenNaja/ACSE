@@ -276,7 +276,7 @@ ACSE.Init = function()
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
 
-                global.api.debug.Trace("Named Databases")
+                global.api.debug.Trace("Named Databases:")
                 for k, v in global.pairs(GameDatabase.GetNamedDatabases()) do
                     if (tArgs[1] == nil or global.string.match(k, tArgs[1])) then
                         global.api.debug.Trace(" - " .. global.tostring(k))
@@ -631,13 +631,15 @@ ACSE._initLuaOverrides = function()
     global.api.debug.Trace("Initializing lua overrides")
 
     -- Perform Lua override
-    local rdebug   = global.api.debug
-    local entity   = global.api.entity
-    local database = global.api.database
+    local rdebug           = global.api.debug
+    local entity           = global.api.entity
+    local database         = global.api.database
+    local componentmanager = global.api.componentmanager
 
-    api.debug      = global.setmetatable(api.acsedebug,    {__index = rdebug  })
-    api.entity     = global.setmetatable(api.acseentity,   {__index = entity  })
-    api.database   = global.setmetatable(api.acsedatabase, {__index = database})
+    api.debug            = global.setmetatable(api.acsedebug,            {__index = rdebug          })
+    api.componentmanager = global.setmetatable(api.acsecomponentmanager, {__index = componentmanager})
+    api.entity           = global.setmetatable(api.acseentity,           {__index = entity          })
+    api.database         = global.setmetatable(api.acsedatabase,         {__index = database        })
 
     -- other Inits
     api.entity.tLoadedEntities = {}
@@ -650,8 +652,9 @@ ACSE._shutdownLuaOverrides = function()
     api.database.tDatabases    = {}
     api.entity.tLoadedEntities = {}
 
-    api.database  = global.getmetatable(api.database).__index
-    api.entity    = global.getmetatable(api.entity  ).__index
-    api.debug     = global.getmetatable(api.debug   ).__index
+    api.database          = global.getmetatable(api.database        ).__index
+    api.entity            = global.getmetatable(api.entity          ).__index
+    api.componentmanager  = global.getmetatable(api.componentmanager).__index
+    api.debug             = global.getmetatable(api.debug           ).__index
 end
 

@@ -101,8 +101,8 @@ end
 ACSEStartScreenManager.Advance = function(self, _nDeltaTime, _nUnscaledDeltaTime)
 	--// Advance our custom component manager
     local tWorldAPIs = api.world.GetWorldAPIs()
-	if tWorldAPIs.acsecomponentmanager then
-		tWorldAPIs.acsecomponentmanager:Advance(_nDeltaTime, _nUnscaledDeltaTime)
+	if tWorldAPIs.acsecustomcomponentmanager then
+		tWorldAPIs.acsecustomcomponentmanager:Advance(_nDeltaTime, _nUnscaledDeltaTime)
 	end
 end
 

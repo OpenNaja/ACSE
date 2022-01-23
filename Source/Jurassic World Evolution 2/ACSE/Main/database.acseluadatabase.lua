@@ -8,11 +8,11 @@
 -----------------------------------------------------------------------
 local global = _G
 local api = global.api
-local table = global.table
 local pairs = global.pairs
 local ipairs = global.ipairs
 local type = global.type
 local require = require
+local table = require("Common.tableplus")
 local ACSEDatabase = module(...)
 local Vector3 = require("Vector3")
 local Vector2 = require("Vector2")
@@ -21,7 +21,7 @@ global.api.debug.Trace("Database.ACSELuaDatabase.lua loaded")
 
 -- @brief ACSE table setup
 global.api.acse = {}
-global.api.acse.versionNumber = 0.626
+global.api.acse.versionNumber = 0.628
 global.api.acse.GetACSEVersionString = function()
     return global.tostring(global.api.acse.versionNumber)
 end
@@ -255,12 +255,44 @@ global.api.acsedebug.RunShellCommand = function(sCmd)
     end
 end
 
+
+--// 
+--// Provides ACSE API component manager support
+--// 
+global.api.acsecomponentmanager = {}
+global.api.acsecomponentmanager.rawLookupComponentManagerID = global.api.componentmanager.LookupComponentManagerID
+global.api.acsecomponentmanager.rawGetComponentManagerNameFromID = global.api.componentmanager.GetComponentManagerNameFromID
+
+
+global.api.acsecomponentmanager.LookupComponentManagerID = function(_sName)
+    local ret = api.componentmanager.rawLookupComponentManagerID(_sName)
+    if not ret then 
+        ret = global.api.acsecustomcomponentmanager:GetComponentIDFromName(_sName)
+    end
+    return ret
+end
+
+global.api.acsecomponentmanager.GetComponentManagerNameFromID = function(_nID)
+    local ret = api.componentmanager.rawGetComponentManagerNameFromID(_nID)
+    if not ret then 
+        ret = global.api.acsecustomcomponentmanager:GetComponentNameFromID(_nID)
+    end
+    return ret
+end
+
+
+
+
+--// 
+--// Provides ACSE API entity support
+--// 
 global.api.acseentity = {}
 global.api.acseentity.tLoadedEntities = {} -- Keep track of loaded entities for their options table
 global.api.acseentity.rawFindPrefab = global.api.entity.FindPrefab
 global.api.acseentity.rawCompilePrefab = global.api.entity.CompilePrefab
 global.api.acseentity.rawInstantiatePrefab = global.api.entity.InstantiatePrefab
 global.api.acseentity.rawAddComponentsToEntity = global.api.entity.AddComponentsToEntity
+global.api.acseentity.rawRemoveComponentsFromEntity = global.api.entity.RemoveComponentsFromEntity
 global.api.acseentity.rawInstantiateDesc = global.api.entity.InstantiateDesc
 global.api.acseentity.rawCreateEntity = global.api.entity.CreateEntity
 --global.api.acseentity.rawDestroyPrefab = global.api.entity.DestroyPrefab
@@ -316,10 +348,6 @@ global.api.acseentity.CompilePrefab = function(tPrefab, sPrefab)
     local ret = global.api.acseentity.rawCompilePrefab(tPrefab, sPrefab)
     if ret == nil then global.api.debug.Error("Error compiling prefab: " .. global.tostring(sPrefab)) end
     return ret
-end
-
-global.api.acseentity.propagateProperties = function(sPrefab, tProperties) 
-
 end
 
 --/
@@ -392,13 +420,57 @@ global.api.acseentity.CreateEntity = function(...)
     return entityId
 end
 
-
 global.api.acseentity.AddComponentsToEntity = function(nEntityId, tComponents, uToken)
-    local ret = global.api.acseentity.rawAddComponentsToEntity(nEntityId, tProperties)
-    global.api.debug.Trace(
-        "Entity.AddComponentsToEntity() " .. type(nEntityId) .. " C " .. type(tComponents) .. " T " .. type(uToken) .. " > " .. type(ret) .. " "
-    )
+
+    -- Modify the tComponents array to ensure we conform the standalonesceneryserialization schema
+    local StandaloneScenerySerialisationID = global.api.componentmanager.LookupComponentManagerID('StandaloneScenerySerialisation')
+    for _, v in global.ipairs(tComponents) do
+
+        --/ Replace custom component IDs and rebuild the components table to use the StandaloneScenerySerialisation schema
+        --/ @todo: move this to a function
+        if v.id >= 10000 then
+            local sName = global.api.acsecustomcomponentmanager:GetComponentNameFromID(v.id)
+            if sName then
+                v.id = StandaloneScenerySerialisationID
+                v.tParams = { [sName]  = v.tParams }
+            end
+        end
+    end
+
+    return global.api.acseentity.rawAddComponentsToEntity(nEntityId, tComponents, uToken)
 end
+
+global.api.acseentity.RemoveComponentsFromEntity = function(nEntityId, tComponents, uToken)
+    --global.api.debug.Trace("ComponentManager:RemoveComponentsFromEntity()")
+    --global.api.debug.Trace("Entities array: " .. table.tostring(tComponents, nil, nil, nil, true))
+
+    -- We are getting an array of IDs of components to remove, but we can't propagate these IDs to 
+    -- out custom component manager because they can't have any data attached. 
+
+    -- This loop will remove any Custom component ID and create a new table with them
+    local tNewComponentsTable = {}
+    local tCustomComponents   = {}
+    for _, v in global.ipairs(tComponents) do
+        if v >= 10000 then 
+            table.append(tCustomComponents, v)
+        else
+            table.append(tNewComponentsTable, v)
+        end
+    end
+    tComponents = tNewComponentsTable
+
+    -- If we have subcomponents to handle, we remove them differently calling ourselves to the 
+    -- custom controller manager. If we try using the standalonesceneryserialisation ID  
+    -- we won't be able to remove any other subcomponent because the game will only propagate the call once.
+    if table.count(tCustomComponents) > 0 then
+        global.api.acsecustomcomponentmanager:RemoveCustomComponentsFromEntity(nEntityId, tCustomComponents, uToken)
+    end
+
+    -- dont call the original removecomponents if the final array is empty.
+    return global.api.acseentity.rawRemoveComponentsFromEntity(nEntityId, tComponents, uToken)
+end
+
+
 
 
 --//
@@ -441,6 +513,7 @@ global.api.acsedatabase.MergeChildDatabase = function(sMainName, sContentName, s
     return ret
 end
 ]]
+
 
 -- @brief add our custom databases
 ACSEDatabase.AddContentToCall = function(_tContentToCall)

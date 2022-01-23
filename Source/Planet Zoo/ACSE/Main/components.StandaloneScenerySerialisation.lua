@@ -21,7 +21,7 @@ local ACSEComponentManager = module(..., (Object.subclass)(Base))
 
 --global.api.debug.Trace("LOADING ACSEComponentManager")
 
-ACSEComponentManager.tAPI = {"GetComponentNames", "CompleteWorldSerialisationLoad"}
+ACSEComponentManager.tAPI = {"CompleteWorldSerialisationLoad", "GetComponentNames", "GetComponentNameFromID", "GetComponentNameFromID"}
 
 -- Construct is defined by the parent class LuaComponentManagerBase, but
 -- will initialize all sub components with the same ComponentManagerID
@@ -32,12 +32,14 @@ ACSEComponentManager.Construct = function(self, _nComponentManagerID)
 
     -- Component manager Init
     self.Components = {}
+    local ComponentManagerCustomId = 10000
     if GameDatabase.GetLuaComponents then
         for _sName, _tParams in pairs(GameDatabase.GetLuaComponents()) do
-            api.debug.Trace("ACSE Adding Component: " .. _sName)
+            api.debug.Trace("ACSE Adding Component: " .. _sName) -- .. " with Id " .. ComponentManagerCustomId )
             local fComponent = require(_tParams)
             local Component = fComponent:new()
-            Component:Construct(self.nComponentManagerID)
+            Component:Construct(ComponentManagerCustomId)
+            ComponentManagerCustomId = ComponentManagerCustomId + 1
             self.Components[_sName] = Component
         end
     end
@@ -50,6 +52,19 @@ ACSEComponentManager.Configure = function(self)
         Component:Configure()
     end
 end
+
+ACSEComponentManager.OnWorldActivation = function(self)
+--  api.debug.Trace("ACSEComponentManager:OnWorldActivation()")
+end
+
+ACSEComponentManager.OnWorldDeactivation = function(self)
+--  api.debug.Trace("ACSEComponentManager:OnWorldDeactivation()")
+end
+
+-- Don't think we ever need this, our custom components maight not have a valid feature IDs
+--ACSEComponentManager.AddFeaturesRequiredOnOtherEntitiesBeforeAddComponent = function(self, _tArrayOfEntityIDParamsAndRequirements)
+--  api.debug.Trace("ACSEComponentManager:AddFeaturesRequiredOnOtherEntitiesBeforeAddComponent()")
+--end
 
 ACSEComponentManager.Init = function(self, _tWorldAPIs)
     global.api.debug.Trace("ACSEComponentManager:Init()")
@@ -89,12 +104,13 @@ ACSEComponentManager.Init = function(self, _tWorldAPIs)
     end
 
     -- Expose our custom API as well
-    global.api.acsecomponentmanager = self
-    _tWorldAPIs.acsecomponentmanager = self
+    global.api.acsecustomcomponentmanager  = self
+    _tWorldAPIs.acsecustomcomponentmanager = self
 end
 
 ACSEComponentManager.Shutdown = function(self)
     global.api.debug.Trace("ACSEComponentManager:Shutdown()")
+
     -- component manager shutdown
     for sName, Component in pairs(self.Components) do
         Component:Shutdown()
@@ -106,7 +122,7 @@ ACSEComponentManager.Shutdown = function(self)
 end
 
 ACSEComponentManager.AddComponentsToEntities = function(self, _tArrayOfEntityIDAndParams, uToken)
-    global.api.debug.Trace("ACSEComponentManager:AddComponentsToEntities()")
+    --global.api.debug.Trace("ACSEComponentManager:AddComponentsToEntities()")
 
     -- Original component AddToEntities, only consider entities with PrefabName defined
     for _, tEntry in ipairs(_tArrayOfEntityIDAndParams) do
@@ -203,9 +219,10 @@ end
 ACSEComponentManager.RemoveComponentFromEntities = function(self, _tEntitiesArray)
     -- global.api.debug.Trace("ACSEComponentManager:RemoveComponentFromEntities()")
 
-    -- Component manager remove from entities
+    -- Component manager remove from entities, this will only get called when the actual standalonesceneryserialisation
+    -- component is removed from an entity, and in our case this only happens when the entity is destroyed, therefore
+    -- we are propagating the event to all our sub components to react accordingly.
     for sName, Component in pairs(self.Components) do
-        -- Leave each component decide what entities need removal.
         Component:RemoveComponentFromEntities(_tEntitiesArray)
     end
 
@@ -214,6 +231,25 @@ ACSEComponentManager.RemoveComponentFromEntities = function(self, _tEntitiesArra
         self.tEntities[entityID] = nil
     end
 end
+
+--
+-- @brief: special function to remove only custom components
+ACSEComponentManager.RemoveCustomComponentsFromEntity = function(self, _nEntityID, _tComponents, uToken)
+    -- global.api.debug.Trace("ACSEComponentManager:RemoveCustomComponentsFromEntity()")
+
+    for _, nComponentID in ipairs(_tComponents) do
+        for sName, Component in pairs(self.Components) do
+            if Component.nComponentManagerID == nComponentID then
+                local _tEntitiesArray = {
+                        _nEntityID,
+                }
+                Component:RemoveComponentFromEntities(_tEntitiesArray)
+            end
+        end
+    end
+
+end
+
 
 ACSEComponentManager.Advance = function(self, _nDeltaTime, _nUnscaledDeltaTime)
     --global.api.debug.Trace("ACSEComponentManager:Advance() " .. global.tostring(_nDeltaTime) )
@@ -273,7 +309,9 @@ ACSEComponentManager.WorldSerialisationClient_Load = function(self, _tLoad, _nLo
     return true
 end
 
--- Required for Planet Zoo, expects this component
+--
+-- Required for Planet Zoo, expects this component to have this API defined
+--
 ACSEComponentManager.CompleteWorldSerialisationLoad = function(self)
     -- Original component
     local ret = self.loadCompletionToken
@@ -283,6 +321,7 @@ end
 
 --
 -- Component Manager API
+-- accessible as global.api.acsecusomcomponentmanager:GetComponents()
 --
 ACSEComponentManager.GetComponentNames = function(self)
     --global.api.debug.Trace("ACSEComponentManager:GetComponentNames()")
@@ -292,3 +331,57 @@ ACSEComponentManager.GetComponentNames = function(self)
     end
     return tNames
 end
+
+ACSEComponentManager.GetComponentNameFromID = function(self, nID)
+    for sName, Component in pairs(self.Components) do
+        if Component.nComponentManagerID == nID then return sName end
+    end
+    return nil
+end
+
+ACSEComponentManager.GetComponentIDFromName = function(self, sName)
+    if self.Components[sName] then
+        return self.Components[sName].nComponentManagerID
+    end
+    return nil
+end
+
+
+--[[ These APIs seem to be abandoned, almost not found more than one or two usages
+
+ACSEComponentManager.Configure_AddFeatureProvided = function(self, _sFeature, _tOptions)
+  api.debug.Trace("ACSEComponentManager:AddFeatureProvided() .. ".. global.tostring(_sFeature))
+  api.debug.Assert(self.nComponentManagerID ~= nil, "Missing component manager ID")
+  return api.componentmanager.Configure_AddFeatureProvided(self.nComponentManagerID, _sFeature, _tOptions)
+end
+
+ACSEComponentManager.Configure_AddFeatureRequired = function(self, _sFeature, _tOptions)
+  api.debug.Trace("ACSEComponentManager:AddFeatureRequired() .. ".. global.tostring(_sFeature))
+  api.debug.Assert(self.nComponentManagerID ~= nil, "Missing component manager ID")
+  return api.componentmanager.Configure_AddFeatureRequired(self.nComponentManagerID, _sFeature, _tOptions)
+end
+
+ACSEComponentManager.Configure_AddFeatureRequiredOptional = function(self, _sFeature, _tOptions)
+  api.debug.Trace("ACSEComponentManager:AddFeatureRequiredOptional() .. ".. global.tostring(_sFeature))
+  api.debug.Assert(self.nComponentManagerID ~= nil, "Missing component manager ID")
+  return api.componentmanager.Configure_AddFeatureRequiredOptional(self.nComponentManagerID, _sFeature, _tOptions)
+end
+
+ACSEComponentManager.Configure_AddFeatureRequiredOnAnotherEntity = function(self, _sFeature, _tOptions)
+  api.debug.Trace("ACSEComponentManager:AddFeatureRequiredOptional() .. ".. global.tostring(_sFeature))
+  api.debug.Assert(self.nComponentManagerID ~= nil, "Missing component manager ID")
+  return ((api.componentmanager).Configure_AddFeatureRequiredOnAnotherEntity)(self.nComponentManagerID, _sFeature, _tOptions)
+end
+
+ACSEComponentManager.GetComponentManagerID = function(self)
+  api.debug.Trace("ACSEComponentManager:GetComponentManagerID()")
+  api.debug.Assert(self.nComponentManagerID ~= nil, "Missing component manager ID")
+  return self.nComponentManagerID
+end
+
+ACSEComponentManager.ActivateFeatureForEntity = function(self, _nEntityID, _nFeatureID)
+  api.debug.Trace("ACSEComponentManager:ActivateFeatureForEntity() .. ".. global.tostring(_nFeatureID))
+  api.debug.Assert(self.nComponentManagerID ~= nil, "Missing component manager ID")
+  api.componentmanager.ActivateFeatureForEntity(self.nComponentManagerID, _nEntityID, _nFeatureID)
+end
+]]

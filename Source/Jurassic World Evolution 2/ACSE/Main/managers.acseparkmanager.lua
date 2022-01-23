@@ -63,8 +63,8 @@ end
 -- @Brief Update function for this manager, responsible to provide Advance to custom components
 ACSEParkManager.Advance = function(self, _nDeltaTime, _nUnscaledDeltaTime)
     local tWorldAPIs = api.world.GetWorldAPIs()
-	if tWorldAPIs.acsecomponentmanager then
-		tWorldAPIs.acsecomponentmanager:Advance(_nDeltaTime, _nUnscaledDeltaTime)
+	if tWorldAPIs.acsecustomcomponentmanager then
+		tWorldAPIs.acsecustomcomponentmanager:Advance(_nDeltaTime, _nUnscaledDeltaTime)
 	end
 end
 
