@@ -23,6 +23,7 @@ local ACSE = module(...)
 -- List of protos/managers to populate from other mods
 ACSE.tParkEnvironmentProtos = {}
 ACSE.tStartEnvironmentProtos = {}
+ACSE.tEnvironmentProtos = {}
 
 -- List of lua Prefabs to populate from other mods
 ACSE.tLuaPrefabs = {}
@@ -494,6 +495,7 @@ ACSE.Init = function()
                 if pf ~= nil then
                     global.package.preload[sModuleName] = pf
                     global.package.loaded[sModuleName] = nil
+
                     local a = global.require(sModuleName)
                     global.package.loaded[sModuleName] = a
 
@@ -534,6 +536,7 @@ ACSE.Init = function()
         "AddStartScreenManagers",
         function(_sName, _tParams)
             if type(_sName) == "string" and type(_tParams) == "table" then
+                api.debug.Trace("Manager: " .. _sName .. " is being added using AddStartScreenManagers (obsolete API)")
                 ACSE.tStartEnvironmentProtos["Managers"][_sName] = _tParams
             end
         end
@@ -544,7 +547,19 @@ ACSE.Init = function()
         "AddParkManagers",
         function(_sName, _tParams)
             if type(_sName) == "string" and type(_tParams) == "table" then
+                api.debug.Trace("Manager: " .. _sName .. " is being added using AddParkManagers (obsolete API)")
                 ACSE.tParkEnvironmentProtos["Managers"][_sName] = _tParams
+            end
+        end
+    )
+
+    --/ Request Park Managers from other mods. The new format is using the 
+    --/ environment name to override and prototype table to merge
+    Main.CallOnContent(
+        "AddManagers",
+        function(_sName, _tParams)
+            if type(_sName) == "string" and type(_tParams) == "table" then
+                ACSE.tEnvironmentProtos[_sName] = _tParams
             end
         end
     )
@@ -554,7 +569,7 @@ ACSE.Init = function()
         "AddLuaPrefabs",
         function(_sName, _tParams)
             if type(_sName) == "string" and type(_tParams) == "table" then
-                global.api.debug.Trace("adding prefab " .. _sName)
+                global.api.debug.Trace("Adding prefab " .. _sName)
                 global.api.debug.Assert(ACSE.tLuaPrefabs[_sName] == nil, "Duplicated Lua Prefab " .. _sName)
                 ACSE.tLuaPrefabs[_sName] = _tParams
             end
@@ -572,6 +587,79 @@ ACSE.Init = function()
             end
         end
     )
+
+    --
+    -- Consolidate all Start/Park managers of the old API to the new one
+    --
+    
+    -- Provide support for old method of adding startscreen managers
+    for _sName, _tParams in global.pairs(ACSE.tStartEnvironmentProtos["Managers"]) do
+        ACSE.tEnvironmentProtos['Environments.StartScreenEnvironment'][_sName] = _tParams
+    end
+
+    -- Provide support for old method of adding Park managers
+    local sParkEnvironment = 'Environments.ParkEnvironment'
+    if api.game.GetGameName() == 'Planet Zoo' then sParkEnvironment = 'Environments.DarwinEnvironment' end
+    for _sName, _tParams in global.pairs(ACSE.tParkEnvironmentProtos["Managers"]) do
+        ACSE.tEnvironmentProtos[sParkEnvironment][_sName] = _tParams
+    end
+
+
+    --/
+    --/ Modify the environment files
+    --/ 
+    local addManagersToEnvironment = function(sEnvironment, tManagers)
+        -- Perform environment overrides
+        local modname  = sEnvironment
+        local tfMod = global.require(modname)
+
+        --/ Required module will be in the package loaded table.
+        local tMod = global.package.preload[modname] or global.package.loaded[modname]
+
+        --/ if still not found use the loaded table from require
+        tMod = tMod or tfMod
+        global.api.debug.Assert(tMod ~= nil, "Can't find " .. modname .. "  resource")
+
+        ACSE._merge = function(a, b, bModifyOnly)
+            if global.type(a) == "table" and global.type(b) == "table" then
+                for k, v in global.pairs(b) do
+                    if global.type(v) == "table" and global.type(a[k] or false) == "table" then
+                        ACSE._merge(a[k], v, bModifyOnly)
+                    else
+                        if not bModifyOnly or bModifyOnly == false or (bModifyOnly == true and a[k] ~= nil) then
+                            a[k] = v
+                        end
+                    end
+                end
+            end
+            return a
+        end
+
+        for _sName, _tParams in global.pairs( tManagers ) do
+            if not _tParams.__inheritance or _tParams.__inheritance == 'Overwrite' then
+                api.debug.Trace("Adding Manager: " .. _sName)
+                tMod.EnvironmentPrototype['Managers'][_sName] = _tParams
+            end
+            if _tParams.__inheritance == 'Append' then
+                api.debug.Trace("Merging Manager: " .. _sName)
+                tMod.EnvironmentPrototype['Managers'][_sName] = _merge(tMod.EnvironmentPrototype['Managers'][_sName], _tParams)
+            end
+            if _tParams.__inheritance == 'Modify' then
+                api.debug.Trace("Modifying Manager: " .. _sName)
+                tMod.EnvironmentPrototype['Managers'][_sName] = _merge(tMod.EnvironmentPrototype['Managers'][_sName], _tParams, true)
+            end
+            -- Any other case will be ignored
+        end
+
+        --/ We move the resource to the preload table, so Lua wont need to load it again and
+        --/ will return our changes
+        global.package.preload[modname] = tMod
+    end
+
+    -- Merge all environment changes to the right modules
+    for sModName, tParams in global.pairs(ACSE.tEnvironmentProtos) do
+        addManagersToEnvironment(sModName, tParams )
+    end
 
 end
 
@@ -600,6 +688,7 @@ ACSE.AddDatabaseFunctions = function(_tDatabaseFunctions)
     end
 end
 
+--[[
 -- List of custom managers to force injection on the starting screen
 ACSE.tStartScreenManagers = {
     ["Managers.ACSEStartScreenManager"] = {}
@@ -621,6 +710,28 @@ ACSE.tParkManagers = {
 -- @brief Add our custom Manager to the starting screen
 ACSE.AddParkManagers = function(_fnAdd)
     local tData = ACSE.tParkManagers
+    for sManagerName, tParams in pairs(tData) do
+        _fnAdd(sManagerName, tParams)
+    end
+end
+]]
+
+-- List of custom managers to force injection on a park, park manager depends on game title.
+local sParkEnvironment = 'Environments.ParkEnvironment'
+if api.game.GetGameName() == 'Planet Zoo' then sParkEnvironment = 'Environments.DarwinEnvironment' end
+
+ACSE.tManagers = {
+    ["Environments.StartScreenEnvironment"] = {
+        ["Managers.ACSEStartScreenManager"] = {}
+    },
+    [sParkEnvironment] = {
+        ["Managers.ACSEParkManager"] = {}
+    },
+}
+
+-- @brief Add our custom Manager to the different environments
+ACSE.AddManagers = function(_fnAdd)
+    local tData = ACSE.tManagers
     for sManagerName, tParams in pairs(tData) do
         _fnAdd(sManagerName, tParams)
     end

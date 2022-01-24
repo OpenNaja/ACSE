@@ -21,7 +21,7 @@ global.api.debug.Trace("Database.ACSELuaDatabase.lua loaded")
 
 -- @brief ACSE table setup
 global.api.acse = {}
-global.api.acse.versionNumber = 0.628
+global.api.acse.versionNumber = 0.631
 global.api.acse.GetACSEVersionString = function()
     return global.tostring(global.api.acse.versionNumber)
 end
@@ -263,7 +263,6 @@ global.api.acsecomponentmanager = {}
 global.api.acsecomponentmanager.rawLookupComponentManagerID = global.api.componentmanager.LookupComponentManagerID
 global.api.acsecomponentmanager.rawGetComponentManagerNameFromID = global.api.componentmanager.GetComponentManagerNameFromID
 
-
 global.api.acsecomponentmanager.LookupComponentManagerID = function(_sName)
     local ret = api.componentmanager.rawLookupComponentManagerID(_sName)
     if not ret then 
@@ -279,8 +278,6 @@ global.api.acsecomponentmanager.GetComponentManagerNameFromID = function(_nID)
     end
     return ret
 end
-
-
 
 
 --// 
@@ -366,7 +363,6 @@ global.api.acseentity.InstantiatePrefab = function(sPrefab, sName, uToken, vTran
     --/ at this moment the entity component is ready so we will rebuild
     --/ the rest of prefabs defined by other mods. This piece in particular
     --/ will come handy for prefabs required early in the loading process.
-
 
     --/ Game default physics entity is PhysicsWorld, however in Planet Zoo this is renamed to MainPhysicsWorld
     local sPyhsicsPrefab = 'PhysicsWorld'
