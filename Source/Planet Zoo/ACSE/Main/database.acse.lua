@@ -68,9 +68,14 @@ ACSE.tDatabaseMethods = {
     end,
     --/ Lua prefabs
     BuildLuaPrefabs = function()
+        local nStartTime = global.api.time.GetPerformanceTimer()
         for _sName, _tParams in pairs(ACSE.tLuaPrefabs) do
             local cPrefab = global.api.entity.CompilePrefab(_tParams, _sName)
         end
+        local nNewTime = global.api.time.GetPerformanceTimer()
+        local nDiff = global.api.time.DiffPerformanceTimers(nNewTime, nStartTime)
+        local nDiffMs = global.api.time.PerformanceTimeToMilliseconds(nDiff)
+        global.api.debug.Trace(("Compiling %d Lua prefabs took %.3f seconds."):format( table.count(ACSE.tLuaPrefabs), (nDiffMs / 1000) ))
     end,
     BuildLuaPrefab = function(_sName)
         global.api.debug.Assert(ACSE.tLuaPrefabs[_sName] ~= nil, "ACSE trying to build a missing prefab: " .. _sName)
@@ -191,12 +196,17 @@ ACSE.Init = function()
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
                 global.api.debug.Trace("Rebuilding custom prefabs..")
+
+                local nStartTime = global.api.time.GetPerformanceTimer()
                 for k, v in global.pairs(GameDatabase.GetLuaPrefabs()) do
                     if (tArgs[1] == nil or global.string.match(k, tArgs[1])) then
                         global.api.entity.CompilePrefab(v, k)
                     end
                 end
-                global.api.debug.Trace("Done.")
+                local nNewTime = global.api.time.GetPerformanceTimer()
+                local nDiff = global.api.time.DiffPerformanceTimers(nNewTime, nStartTime)
+                local nDiffMs = global.api.time.PerformanceTimeToMilliseconds(nDiff)
+                global.api.debug.Trace( ("Completed in %.3f seconds."):format(nDiffMs / 1000) )
                 return true, nil
             end,
             "&Rebuild&Custom&Prefabs [{string}]",
@@ -495,7 +505,6 @@ ACSE.Init = function()
                 if pf ~= nil then
                     global.package.preload[sModuleName] = pf
                     global.package.loaded[sModuleName] = nil
-
                     local a = global.require(sModuleName)
                     global.package.loaded[sModuleName] = a
 
@@ -536,7 +545,7 @@ ACSE.Init = function()
         "AddStartScreenManagers",
         function(_sName, _tParams)
             if type(_sName) == "string" and type(_tParams) == "table" then
-                api.debug.Trace("Manager: " .. _sName .. " is being added using AddStartScreenManagers (obsolete API)")
+                api.debug.Trace("Manager: " .. _sName .. " is being added using AddStartScreenManagers (obsolete API).")
                 ACSE.tStartEnvironmentProtos["Managers"][_sName] = _tParams
             end
         end
@@ -547,7 +556,7 @@ ACSE.Init = function()
         "AddParkManagers",
         function(_sName, _tParams)
             if type(_sName) == "string" and type(_tParams) == "table" then
-                api.debug.Trace("Manager: " .. _sName .. " is being added using AddParkManagers (obsolete API)")
+                api.debug.Trace("Manager: " .. _sName .. " is being added using AddParkManagers (obsolete API).")
                 ACSE.tParkEnvironmentProtos["Managers"][_sName] = _tParams
             end
         end
@@ -565,16 +574,21 @@ ACSE.Init = function()
     )
 
     --/ Request Lua Prefabs from other mods
+    local nStartTime = global.api.time.GetPerformanceTimer()
     Main.CallOnContent(
         "AddLuaPrefabs",
         function(_sName, _tParams)
             if type(_sName) == "string" and type(_tParams) == "table" then
-                global.api.debug.Trace("Adding prefab " .. _sName)
+                -- global.api.debug.Trace("Adding prefab " .. _sName)
                 global.api.debug.Assert(ACSE.tLuaPrefabs[_sName] == nil, "Duplicated Lua Prefab " .. _sName)
                 ACSE.tLuaPrefabs[_sName] = _tParams
             end
         end
     )
+    local nNewTime = global.api.time.GetPerformanceTimer()
+    local nDiff = global.api.time.DiffPerformanceTimers(nNewTime, nStartTime)
+    local nDiffMs = global.api.time.PerformanceTimeToMilliseconds(nDiff)
+    global.api.debug.Trace(("Loaded %d Lua prefabs in %.3f seconds"):format(table.count(ACSE.tLuaPrefabs), (nDiffMs / 1000)))
 
     --/ Request Lua Components from other mods
     Main.CallOnContent(
@@ -609,6 +623,7 @@ ACSE.Init = function()
     --/ Modify the environment files
     --/ 
     local addManagersToEnvironment = function(sEnvironment, tManagers)
+        api.debug.Trace("Merging managers into " .. sEnvironment)
         -- Perform environment overrides
         local modname  = sEnvironment
         local tfMod = global.require(modname)
