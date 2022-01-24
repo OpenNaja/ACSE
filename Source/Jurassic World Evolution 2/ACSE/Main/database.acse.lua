@@ -534,7 +534,7 @@ ACSE.Init = function()
         "AddStartScreenManagers",
         function(_sName, _tParams)
             if type(_sName) == "string" and type(_tParams) == "table" then
-                ACSE.tStartEnvironmentProtos["Managers"][string.lower(_sName)] = _tParams
+                ACSE.tStartEnvironmentProtos["Managers"][_sName] = _tParams
             end
         end
     )
@@ -544,7 +544,7 @@ ACSE.Init = function()
         "AddParkManagers",
         function(_sName, _tParams)
             if type(_sName) == "string" and type(_tParams) == "table" then
-                ACSE.tParkEnvironmentProtos["Managers"][string.lower(_sName)] = _tParams
+                ACSE.tParkEnvironmentProtos["Managers"][_sName] = _tParams
             end
         end
     )
