@@ -97,7 +97,7 @@ ACSEDebugManager.Init = function(self, _tProperties, _tEnvironment)
     self.tInput.keys = ACSEDebugManager.tUIKeys
     self.tInput.textkeys = ACSEDebugManager.tTextKeys
     self.tInput.oControlContext =
-        global.api.input.CreatePlayerControlContext("acsedebug", global.api.player.GetGameOwner(), 1) -- _nPriority
+        global.api.input.CreatePlayerControlContext("acsedebug", global.api.player.GetGameOwner(), 0) -- _nPriority
     for k, v in pairs(self.tInput.keys) do
         v.o = self.tInput.oControlContext:GetButton(tostring(k))
     end
@@ -118,7 +118,7 @@ ACSEDebugManager.Init = function(self, _tProperties, _tEnvironment)
 
     -- get a full keybd control context but don't register it yet
     self.tInput.oKeybdControlContext =
-        global.api.input.CreatePlayerControlContext("uitext", global.api.player.GetGameOwner(), 2)
+        global.api.input.CreatePlayerControlContext("uitext", global.api.player.GetGameOwner(), 0)
     for k, v in pairs(self.tInput.textkeys) do
         v.o = self.tInput.oKeybdControlContext:GetButton(tostring(k))
     end
@@ -132,15 +132,16 @@ ACSEDebugManager.Init = function(self, _tProperties, _tEnvironment)
             "Clear",
             "Clears the log window.\n"
         ),
-        --[[
+		--[[
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
                 self.uiMovie:CopyLog()
+				return true, "Log copied to clipboard"
             end,
             "Copy",
             "Copies the content of the log window to the clipboard. (Not working currently)\n"
         )
-        ]]
+		]]
     }
 end
 
@@ -184,9 +185,9 @@ ACSEDebugManager._updateTextKeyStatus = function(self)
                 elseif v.val == "HISTDOWN" then
                     self:_loadPrevCommand()
                 elseif v.val == "ENTER" then
-                    global.table.insert(self._tCommandHistory, self._sCommand)
-                    self._tCommandHistoryIndex = #self._tCommandHistory + 1
-                    if self._sCommand ~= '' then
+                    if self._sCommand and self._sCommand ~= '' then
+						global.table.insert(self._tCommandHistory, self._sCommand)
+						self._tCommandHistoryIndex = #self._tCommandHistory + 1
                         ret = global.api.debug.RunShellCommand(self._sCommand)
                         self._sCommand = ""
                     end

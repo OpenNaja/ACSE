@@ -4,6 +4,10 @@
   import flash.display.Sprite;
   import flash.display.MovieClip;
   import flash.system.System;
+  import flash.desktop.Clipboard;
+  import flash.desktop.ClipboardFormats;
+  import flash.desktop.ClipboardTransferMode;
+
 
   public class ACSEDebugWindowApp extends UIApplication {
 
@@ -81,9 +85,15 @@
       logBox.scrollV = logBox.maxScrollV;
     }
 
-    public function CopyLog(): * {
-      System.setClipboard(logBox.text);
-    }
+	public function CopyLog(): * {
+      logBox.appendText("Trying to copy to clipboard");
+      logBox.scrollV = logBox.maxScrollV;
+
+	  //System.setClipboard(logBox.text);
+	  System.setClipboard("Copied from the movie");
+      Clipboard.generalClipboard.clear();
+      Clipboard.generalClipboard.setData(ClipboardFormats.TEXT_FORMAT, "Im copied from a script");
+	}
 
   }
 }
