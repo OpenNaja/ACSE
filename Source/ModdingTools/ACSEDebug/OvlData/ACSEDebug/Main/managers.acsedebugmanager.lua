@@ -79,6 +79,9 @@ ACSEDebugManager.Init = function(self, _tProperties, _tEnvironment)
     Trace("ACSEDebugManager.Init()")
     self._tCommandHistoryIndex = 1
 
+    self.bTraceEnabled = true -- we start enabled by default
+    self.bClearOnAdvance = false
+
     self.iUIManager = global.api.game.GetEnvironment():RequireInterface("Interfaces.IUIManager")
     self.uiMovie = self.iUIManager:GetGUIWrapper(self._NAME, "ACSEDebugWindow")
     self.uiMovie:Load()
@@ -89,7 +92,9 @@ ACSEDebugManager.Init = function(self, _tProperties, _tEnvironment)
     -- Temporarily hook trace to get log messages
     local dTrace = function(text)
         ACSEDebugManager.oldTrace(text)
-        self.uiMovie:AddLog(text .. "\n")
+        if self.bTraceEnabled == true then 
+            self.uiMovie:AddLog(text .. "\n")
+        end
     end
     global.api.debug.Trace = dTrace
 
@@ -132,6 +137,35 @@ ACSEDebugManager.Init = function(self, _tProperties, _tEnvironment)
             "Clear",
             "Clears the log window.\n"
         ),
+        api.debug.RegisterShellCommand(
+            function(tEnv, tArgs)
+                if #tArgs ~= 1 then
+                    return false, "EnableConsoleTrace requires a frue or false argument.\n"
+                end
+                self.bTraceEnabled = tArgs[1]
+
+                local sMsg = "Tracing disabled."
+                if self.bTraceEnabled then sMsg = "Tracing enabled." end
+                return true, sMsg
+            end,
+            "&Enable&Console&Trace {bool}",
+            "Redirects/hides trace output to the UI (useful for large text prints).\n"
+        ),
+        api.debug.RegisterShellCommand(
+            function(tEnv, tArgs)
+                if #tArgs ~= 1 then
+                    return false, "EnableClearOnAdvance requires a frue or false argument.\n"
+                end
+                self.bClearOnAdvance = tArgs[1]
+
+                local sMsg = "Advance Clearing disabled."
+                if self.bTraceEnabled then sMsg = "Advance Clearing enabled." end
+                return true, sMsg
+            end,
+            "&Enable&ClearOn&Advance {bool}",
+            "Clear the console every advance() tick (useful for printing from advance functions).\n"
+        ),
+
 		--[[
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
@@ -204,6 +238,10 @@ end
 
 -- @brief update UI visibility and key down events
 ACSEDebugManager.Advance = function(self, _nDeltaTime)
+    if self.bClearOnAdvance == true then
+        self.uiMovie:ClearLog()
+    end
+
     self:_updateKeyStatus()
 
     if self.tInput.keys["ACSEDebug_ToggleConsole"].status then

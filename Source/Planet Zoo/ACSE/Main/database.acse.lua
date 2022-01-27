@@ -27,6 +27,7 @@ ACSE.tEnvironmentProtos = {}
 
 -- List of lua Prefabs to populate from other mods
 ACSE.tLuaPrefabs = {}
+ACSE.tLuaPrefabNames = {}
 
 -- List of lua Components to populate from other mods
 ACSE.tLuaComponents = {}
@@ -61,16 +62,24 @@ ACSE.tDatabaseMethods = {
     GetLuaPrefabs = function()
         return ACSE.tLuaPrefabs
     end,
+    GetLuaPrefabNames = function()
+        return ACSE.tLuaPrefabNames
+    end,
     --/ Lua prefabs
     GetLuaPrefab = function(_sName)
-        global.api.debug.Assert(ACSE.tLuaPrefabs[_sName] ~= nil, "ACSE trying to access a missing prefab: " .. _sName)
-        return ACSE.tLuaPrefabs[_sName] or nil
+        global.api.debug.Assert(ACSE.tLuaPrefabNames[_sName] ~= nil, "ACSE trying to access a missing prefab: " .. _sName)
+        for _,tData in global.ipairs(ACSE.tLuaPrefabs) do
+            if tData.PrefabName == _sName then 
+                return tData.PrefabData
+            end
+        end
+        return nil
     end,
     --/ Lua prefabs
     BuildLuaPrefabs = function()
         local nStartTime = global.api.time.GetPerformanceTimer()
-        for _sName, _tParams in pairs(ACSE.tLuaPrefabs) do
-            local cPrefab = global.api.entity.CompilePrefab(_tParams, _sName)
+        for _,tData in global.ipairs(ACSE.tLuaPrefabs) do
+            local cPrefab = global.api.entity.CompilePrefab(tData.PrefabData, tData.PrefabName)
         end
         local nNewTime = global.api.time.GetPerformanceTimer()
         local nDiff = global.api.time.DiffPerformanceTimers(nNewTime, nStartTime)
@@ -78,10 +87,13 @@ ACSE.tDatabaseMethods = {
         global.api.debug.Trace(("Compiling %d Lua prefabs took %.3f seconds."):format( table.count(ACSE.tLuaPrefabs), (nDiffMs / 1000) ))
     end,
     BuildLuaPrefab = function(_sName)
-        global.api.debug.Assert(ACSE.tLuaPrefabs[_sName] ~= nil, "ACSE trying to build a missing prefab: " .. _sName)
-        if ACSE.tLuaPrefabs[_sName] then
-            local cPrefab = global.api.entity.CompilePrefab(ACSE.tLuaPrefabs[_sName], _sName)
+        for _,tData in global.ipairs(ACSE.tLuaPrefabs) do
+            if tData.PrefabName == _sName then
+                local cPrefab = global.api.entity.CompilePrefab(tData.PrefabData, tData.PrefabName)
+                return
+            end
         end
+        global.api.debug.Trace("ACSE trying to build a missing prefab: " .. _sName)
     end,
     --/ version info
     GetACSEVersionString = function()
@@ -126,7 +138,7 @@ ACSE.Init = function()
     ACSE.tParkEnvironmentProtos = {SearchPaths = {}, Managers = {}}
     ACSE.tStartEnvironmentProtos = {SearchPaths = {}, Managers = {}}
     ACSE.tLuaPrefabs = {}
-
+    ACSE.tLuaPrefabNames = {}
 
     -- Register our own custom shell commands
     ACSE.tShellCommands = {
@@ -198,9 +210,9 @@ ACSE.Init = function()
                 global.api.debug.Trace("Rebuilding custom prefabs..")
 
                 local nStartTime = global.api.time.GetPerformanceTimer()
-                for k, v in global.pairs(GameDatabase.GetLuaPrefabs()) do
-                    if (tArgs[1] == nil or global.string.match(k, tArgs[1])) then
-                        global.api.entity.CompilePrefab(v, k)
+                for _, tData in global.pairs(GameDatabase.GetLuaPrefabs()) do
+                    if (tArgs[1] == nil or global.string.match(tData.PrefabName, tArgs[1])) then
+                        global.api.entity.CompilePrefab(tData.PrefabData, tData.PrefabName)
                     end
                 end
                 local nNewTime = global.api.time.GetPerformanceTimer()
@@ -215,9 +227,9 @@ ACSE.Init = function()
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
                 global.api.debug.Trace("Custom Prefabs:")
-                for k, v in global.pairs(GameDatabase.GetLuaPrefabs()) do
-                    if (tArgs[1] == nil or global.string.match(k, tArgs[1])) then
-                        global.api.debug.Trace(" - " .. global.tostring(k))
+                for _, tData in global.pairs(GameDatabase.GetLuaPrefabs()) do
+                    if (tArgs[1] == nil or global.string.match(tData.PrefabName, tArgs[1])) then
+                        global.api.debug.Trace(" - " .. global.tostring(tData.PrefabName))
                     end
                 end
                 return true, nil
@@ -579,16 +591,17 @@ ACSE.Init = function()
         "AddLuaPrefabs",
         function(_sName, _tParams)
             if type(_sName) == "string" and type(_tParams) == "table" then
-                -- global.api.debug.Trace("Adding prefab " .. _sName)
-                global.api.debug.Assert(ACSE.tLuaPrefabs[_sName] == nil, "Duplicated Lua Prefab " .. _sName)
-                ACSE.tLuaPrefabs[_sName] = _tParams
+                if global.api.debug.Assert(ACSE.tLuaPrefabNames[_sName] == nil, "Duplicated Lua Prefab " .. _sName) then
+                    ACSE.tLuaPrefabNames[_sName] = true
+                    table.append(ACSE.tLuaPrefabs, { PrefabName = _sName, PrefabData = _tParams })
+                end
             end
         end
     )
     local nNewTime = global.api.time.GetPerformanceTimer()
     local nDiff = global.api.time.DiffPerformanceTimers(nNewTime, nStartTime)
     local nDiffMs = global.api.time.PerformanceTimeToMilliseconds(nDiff)
-    global.api.debug.Trace(("Loaded %d Lua prefabs in %.3f seconds"):format(table.count(ACSE.tLuaPrefabs), (nDiffMs / 1000)))
+    global.api.debug.Trace(("Loaded %d Lua prefabs in %.3f seconds"):format(table.count(ACSE.tLuaPrefabNames), (nDiffMs / 1000)))
 
     --/ Request Lua Components from other mods
     Main.CallOnContent(
@@ -675,6 +688,47 @@ ACSE.Init = function()
     for sModName, tParams in global.pairs(ACSE.tEnvironmentProtos) do
         addManagersToEnvironment(sModName, tParams )
     end
+
+
+    --[[    
+    -- Hook into the UIManager
+    local modname  = 'uimanager'
+    local tfMod = global.require(modname)
+
+    --/ Required module will be in the package loaded table.
+    local tMod = global.package.preload[modname] or global.package.loaded[modname]
+
+    --/ if still not found use the loaded table from require
+    tMod = tMod or tfMod
+    global.api.debug.Assert(tMod ~= nil, "Can't find " .. modname .. "  resource")
+
+    api.debug.Trace("UIManager: " .. table.tostring(tMod))
+
+    if global.type(tMod) == 'table' then
+
+        tMod.oldGetGUIWrapper = tMod.GetGUIWrapper
+        tMod.GetGUIWrapper = function(self, sModuleName, sUIName, bReuse)
+            if global.api.acse.uiWrappers == nil then global.api.acse.uiWrappers = {} end
+            local ret = nil
+            if bReuse == true then  
+                api.debug.Trace("Reusing GUI Wrapper") 
+                ret = global.api.acse.uiWrappers[ sModuleName .. sUIName ]
+            else 
+                ret = self:oldGetGUIWrapper(sModuleName, sUIName)
+                global.api.acse.uiWrappers[ sModuleName .. sUIName ] = ret
+            end
+            api.debug.Trace("UIManager:GetGUIWrapper(" .. global.tostring(sModuleName) .. ", " .. global.tostring(sUIName) .. ") = " .. global.tostring(ret))
+            return ret
+        end
+
+
+        --/ We move the resource to the preload table, so Lua wont need to load it again and
+        --/ will return our changes
+        global.package.preload[modname] = tMod
+    end
+    ]]
+
+
 
 end
 

@@ -91,7 +91,7 @@ end
 ACSEParkManager.CompilePrefabs = function(self)
     api.debug.Trace("ACSEParkManager:CompilePrefabs()")
     -- Compile all prefabs added to the ACSE database.
-    if GameDatabase.GetLuaPrefabs then
+    if GameDatabase.BuildLuaPrefabs then
         GameDatabase.BuildLuaPrefabs()
     end
 end

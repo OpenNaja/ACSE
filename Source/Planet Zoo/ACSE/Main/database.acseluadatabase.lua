@@ -21,7 +21,7 @@ global.api.debug.Trace("Database.ACSELuaDatabase.lua loaded")
 
 -- @brief ACSE table setup
 global.api.acse = {}
-global.api.acse.versionNumber = 0.632
+global.api.acse.versionNumber = 0.633
 global.api.acse.GetACSEVersionString = function()
     return global.tostring(global.api.acse.versionNumber)
 end
@@ -370,14 +370,16 @@ global.api.acseentity.InstantiatePrefab = function(sPrefab, sName, uToken, vTran
 
     if sPrefab == sPyhsicsPrefab then
         local GameDatabase = require("Database.GameDatabase")
-        if GameDatabase.GetLuaPrefabs then
+        if GameDatabase.BuildLuaPrefabs then
             GameDatabase.BuildLuaPrefabs()
         end
     end
 
     local entityId = global.api.acseentity.rawInstantiatePrefab(sPrefab, sName, uToken, vTransform, nParent, bAttach, tProperties, nInstanceID)
     if entityId then
-        -- we can use the API to get the rest of the data from the Instance ID
+        -- we can use the API to get the rest of the data from the Instance ID, this is used by our 
+        -- custom component manager to store the tProperties data when adding components to entities
+        -- based on properties.
         global.api.acseentity.tLoadedEntities[entityId] = { sPrefab = sPrefab, tProperties = tProperties}
     end
 
@@ -389,18 +391,19 @@ global.api.acseentity.InstantiatePrefab = function(sPrefab, sName, uToken, vTran
 end
 
 --// Changes are this is to instantiate a descendant of a prefab by name
+--// this seems to be obsolete, replaced by the prefabs list in the world file. 
 global.api.acseentity.InstantiateDesc = function(...)
     local arg = {...}
     for i,v in global.ipairs(arg) do
         global.api.debug.Trace("arg : " .. global.tostring(v))
     end
 
-    local entityId = global.api.acseentity.rawInstantiateDesc(...)
+    local descResult = global.api.acseentity.rawInstantiateDesc(...)
     global.api.debug.Trace(
-        "Entity.InstantiteDesc() with entityId : " .. global.tostring(entityId)
+        "Entity.InstantiteDesc() with entityId : " .. global.tostring(descResult)
     )
 
-    return entityId
+    return descResult
 end
 
 global.api.acseentity.CreateEntity = function(...)

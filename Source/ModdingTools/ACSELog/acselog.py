@@ -21,8 +21,11 @@ def main(target_process):
         try:
             session = frida.attach(target_process)
             loopwait = True
-        except:
+        except frida.ProcessNotFoundError:
             pass
+        except:
+            loopwait = True
+
 
     os.system('cls')
 
