@@ -148,7 +148,7 @@ ACSEDebugManager.Init = function(self, _tProperties, _tEnvironment)
                 if self.bTraceEnabled then sMsg = "Tracing enabled." end
                 return true, sMsg
             end,
-            "&Enable&Console&Trace {bool}",
+            "&S&u&press&Trace {bool}",
             "Redirects/hides trace output to the UI (useful for large text prints).\n"
         ),
         api.debug.RegisterShellCommand(

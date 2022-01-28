@@ -432,7 +432,7 @@ ACSE.Init = function()
                     return false, "Expected exactly one string argument, the module name (or a search string).\n"
                 end
 
-                local sModuleNamePattern = (string.lower)(tArgs[1])
+                local sModuleNamePattern = string.lower(tArgs[1])
 
                 -- get module list from package.loaded that contain the pattern in the name
                 local tLoadedModuleNames = global.api.debug.GetListOfLoadedModuleNames()
@@ -664,6 +664,7 @@ ACSE.Init = function()
         end
 
         for _sName, _tParams in global.pairs( tManagers ) do
+            _sName = string.lower(_sName)
             if not _tParams.__inheritance or _tParams.__inheritance == 'Overwrite' then
                 api.debug.Trace("Adding Manager: " .. _sName)
                 tMod.EnvironmentPrototype['Managers'][_sName] = _tParams
