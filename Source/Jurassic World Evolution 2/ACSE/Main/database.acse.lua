@@ -545,15 +545,14 @@ ACSE.Init = function()
                     pf, sMsg = global.loadfile(api.acse.devpath .. sName .. ".lua")
                 end
                 if pf ~= nil then
-                    global.package.preload[sModuleName] = pf
-                    global.package.loaded[sModuleName] = nil
-                    local a = global.require(sModuleName)
-                    global.package.loaded[sModuleName] = a
-                    global.package.loaded[ tArgs[1] ] = a
+                    --global.package.preload[ tArgs[1] ] = pf
+                    global.package.preload[ tArgs[1] ] = pf
+                    global.package.loaded[tArgs[1]] = nil
+                    local a = global.require(tArgs[1])
 
-                    local fnMod, sErrorMessage = global.loadresource(sModuleName)
+                    local fnMod, sErrorMessage = global.loadresource( tArgs[1] )
                     if not fnMod then
-                        return false, "Resource not found: " .. sErrorMessage
+                        return false, "Resource not found: " .. sErrorMessage 
                     end
                 else
                     return false, "Module import failed: " .. sModuleName .. ".lua not found\n" .. global.tostring(sMgs)
@@ -693,7 +692,7 @@ ACSE.Init = function()
             end
             return a
         end
-
+        --api.debug.Trace("Proto: " .. table.tostring(tMod.EnvironmentPrototype, nil, nil, nil, true))
         for _sName, _tParams in global.pairs( tManagers ) do
             if not _tParams.__inheritance or _tParams.__inheritance == 'Overwrite' then
                 api.debug.Trace("Adding Manager: " .. _sName)
