@@ -148,18 +148,48 @@ ACSE.Init = function()
                     return false, "SetTweakable requires two arguments"
                 end
 
-                tweakable = api.acsedebug.GetDebugTweakable(tArgs[1])
-                if tweakable ~= nil then
-                    if tweakable.type == 22 then -- boolean
-                        local stringtoboolean = {["true"] = true, ["false"] = false}
-                        tArgs[2] = stringtoboolean[global.string.lower(tArgs[2])]
-                    else -- numbers
-                        tArgs[2] = global.tonumber(tArgs[2])
+                local sTweakableNamePattern = string.lower(tArgs[1])
+                local tLoadedTweakableNames = GameDatabase.GetAllTweakables()
+
+                local tFilteredLoadedModuleNames = {}
+                _pattern = string.gsub(sTweakableNamePattern, "%%", "")
+                for k, v in global.pairs(tLoadedTweakableNames) do
+                    if StringUtils.StrMatchI(k, _pattern) then
+                        tFilteredLoadedModuleNames[#tFilteredLoadedModuleNames + 1] = k
                     end
-                    tweakable:SetValue(tArgs[2])
-                else 
-                    return false, "Tweakable " .. tArgs[1] .. " not found.\n"
                 end
+
+                local nFoundModulesCount = #tFilteredLoadedModuleNames
+                if nFoundModulesCount < 1 then
+                    return false, 'Couldn\'t find a Tweakable matching the pattern "' .. sTweakableNamePattern .. '".'
+                end
+
+                -- Locating named modules
+                for i, sModuleName in ipairs(tFilteredLoadedModuleNames) do
+                    if sTweakableNamePattern == string.lower(sModuleName) then
+                        tFilteredLoadedModuleNames = {sModuleName}
+                    end
+                end
+                nFoundModulesCount = #tFilteredLoadedModuleNames
+
+                if nFoundModulesCount > 1 then
+                    local allModulesList = table.concat(tFilteredLoadedModuleNames, "\n")
+                    return false, "Found " ..
+                        global.tostring(nFoundModulesCount) ..' existing Tweakables matching the pattern "' ..
+                        sTweakableNamePattern .. '". You need to be more specific. \nPossible Tweakables:\n' .. allModulesList
+                end
+
+                local sTweakableName = tFilteredLoadedModuleNames[1]
+
+                tweakable = api.acsedebug.GetDebugTweakable(sTweakableName)
+                if tweakable.type == 22 then -- boolean
+                    local stringtoboolean = {["true"] = true, ["false"] = false}
+                    tArgs[2] = stringtoboolean[global.string.lower(tArgs[2])]
+                else -- numbers
+                    tArgs[2] = global.tonumber(tArgs[2])
+                end
+                tweakable:SetValue(tArgs[2])
+                return true, "Tweakable " .. sTweakableName .. " set to: " .. global.tostring(tArgs[2]).. ".\n"
             end,
             "&Set&Tweakable {string} {value}",
             "Changes the value of a tweakable.\n"
@@ -168,7 +198,7 @@ ACSE.Init = function()
             function(tEnv, tArgs)
                 api.debug.Trace("List of Tweakables:")
                 for k, v in global.pairs(api.acsedebug.tTweakables) do
-                    if (tArgs[1] == nil or global.string.match(v.id, tArgs[1])) then
+                    if (tArgs[1] == nil or global.string.match(string.lower(k), string.lower(tArgs[1]))) then
                         api.debug.Trace(global.tostring(v.id) .. " = " .. global.tostring(v.value))
                     end
                 end
@@ -180,7 +210,7 @@ ACSE.Init = function()
             function(tEnv, tArgs)
                 api.debug.Trace("List of Commands:")
                 for k, v in global.pairs(api.acsedebug.tShellCommands) do
-                    if (tArgs[1] == nil or global.string.match(k, tArgs[1])) then
+                    if (tArgs[1] == nil or global.string.match(string.lower(k), string.lower(tArgs[1]))) then
                         api.debug.Trace(global.tostring(v._sCmd))
                     end
                 end
@@ -519,6 +549,7 @@ ACSE.Init = function()
                     global.package.loaded[sModuleName] = nil
                     local a = global.require(sModuleName)
                     global.package.loaded[sModuleName] = a
+                    global.package.loaded[ tArgs[1] ] = a
 
                     local fnMod, sErrorMessage = global.loadresource(sModuleName)
                     if not fnMod then
@@ -664,7 +695,6 @@ ACSE.Init = function()
         end
 
         for _sName, _tParams in global.pairs( tManagers ) do
-            _sName = string.lower(_sName)
             if not _tParams.__inheritance or _tParams.__inheritance == 'Overwrite' then
                 api.debug.Trace("Adding Manager: " .. _sName)
                 tMod.EnvironmentPrototype['Managers'][_sName] = _tParams
