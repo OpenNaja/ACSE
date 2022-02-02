@@ -21,7 +21,7 @@ global.api.debug.Trace("Database.ACSELuaDatabase.lua loaded")
 
 -- @brief ACSE table setup
 global.api.acse = {}
-global.api.acse.versionNumber = 0.637
+global.api.acse.versionNumber = 0.641
 global.api.acse.GetACSEVersionString = function()
     return global.tostring(global.api.acse.versionNumber)
 end
@@ -37,10 +37,56 @@ global.api.acse.SetACSEDevPath = function(_sPath)
     global.api.acse.devpath = _sPath
 end
 
+-- @brief allow registration of gameplay settings handlers
+global.api.acse._tGameSettingsRegistrations = {}
+global.api.acse.RegisterGameSettingsHandler = function( fGetItems, fHandleEvent, fApplyChanges)
+    local tItem = {
+        fGetItems     = fGetItems,
+        fHandleEvent  = fHandleEvent,
+        fApplyChanges = fApplyChanges,
+    }
+    table.append(global.api.acse._tGameSettingsRegistrations, tItem)
+    return #global.api.acse._tGameSettingsRegistrations
+end
+global.api.acse.UnregisterGameSettingsHandler = function(nItem)
+    table.remove(global.api.acse._tGameSettingsRegistrations, nItem)
+end
+
+-- @brief allow registration of sandbox settings handlers
+global.api.acse._tSandboxSettingsRegistrations = {}
+global.api.acse.RegisterSandboxSettingsHandler = function( fGetItems, fHandleEvent, fApplyChanges)
+    local tItem = {
+        fGetItems     = fGetItems,
+        fHandleEvent  = fHandleEvent,
+        fApplyChanges = fApplyChanges,
+    }
+    table.append(global.api.acse._tSandboxSettingsRegistrations, tItem)
+    return #global.api.acse._tSandboxSettingsRegistrations
+end
+global.api.acse.UnregisterSandboxSettingsHandler = function(nItem)
+    table.remove(global.api.acse._tSandboxSettingsRegistrations, nItem)
+end
+
+-- @brief allow registration of keyboard control settings handlers
+global.api.acse._tControlsSettingsRegistrations = {}
+global.api.acse.RegisterControlsSettingsHandler = function( fGetItems, fHandleEvent, fApplyChanges)
+    local tItem = {
+        fGetItems     = fGetItems,
+        fHandleEvent  = fHandleEvent,
+        fApplyChanges = fApplyChanges,
+    }
+    table.append(global.api.acse._tControlsSettingsRegistrations, tItem)
+    return #global.api.acse._tControlsSettingsRegistrations
+end
+global.api.acse.UnregisterControlsSettingsHandler = function(nItem)
+    table.remove(global.api.acse._tControlsSettingsRegistrations, nItem)
+end
+
 -- @brief setup a custom debug/trace system to use
 global.api.acsedebug = {}
 
 -- @brief logging/tracing functions. Export Trace as a CreateFile call for Frida console hooking
+-- or can be viewed with procmon file system events
 global.api.acsedebug.Trace = function(msg)
     global.loadfile("acse :" .. msg)
 end
@@ -468,8 +514,6 @@ global.api.acseentity.RemoveComponentsFromEntity = function(nEntityId, tComponen
     -- dont call the original removecomponents if the final array is empty.
     return global.api.acseentity.rawRemoveComponentsFromEntity(nEntityId, tComponents, uToken)
 end
-
-
 
 
 --//

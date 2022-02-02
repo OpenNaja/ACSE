@@ -67,9 +67,12 @@ ACSE.tDatabaseMethods = {
     end,
     --/ Lua prefabs
     GetLuaPrefab = function(_sName)
-        global.api.debug.Assert(ACSE.tLuaPrefabNames[_sName] ~= nil, "ACSE trying to access a missing prefab: " .. _sName)
-        for _,tData in global.ipairs(ACSE.tLuaPrefabs) do
-            if tData.PrefabName == _sName then 
+        global.api.debug.Assert(
+            ACSE.tLuaPrefabNames[_sName] ~= nil,
+            "ACSE trying to access a missing prefab: " .. _sName
+        )
+        for _, tData in global.ipairs(ACSE.tLuaPrefabs) do
+            if tData.PrefabName == _sName then
                 return tData.PrefabData
             end
         end
@@ -78,16 +81,18 @@ ACSE.tDatabaseMethods = {
     --/ Lua prefabs
     BuildLuaPrefabs = function()
         local nStartTime = global.api.time.GetPerformanceTimer()
-        for _,tData in global.ipairs(ACSE.tLuaPrefabs) do
+        for _, tData in global.ipairs(ACSE.tLuaPrefabs) do
             local cPrefab = global.api.entity.CompilePrefab(tData.PrefabData, tData.PrefabName)
         end
         local nNewTime = global.api.time.GetPerformanceTimer()
         local nDiff = global.api.time.DiffPerformanceTimers(nNewTime, nStartTime)
         local nDiffMs = global.api.time.PerformanceTimeToMilliseconds(nDiff)
-        global.api.debug.Trace(("Compiling %d Lua prefabs took %.3f seconds."):format( table.count(ACSE.tLuaPrefabs), (nDiffMs / 1000) ))
+        global.api.debug.Trace(
+            ("Compiling %d Lua prefabs took %.3f seconds."):format(table.count(ACSE.tLuaPrefabs), (nDiffMs / 1000))
+        )
     end,
     BuildLuaPrefab = function(_sName)
-        for _,tData in global.ipairs(ACSE.tLuaPrefabs) do
+        for _, tData in global.ipairs(ACSE.tLuaPrefabs) do
             if tData.PrefabName == _sName then
                 local cPrefab = global.api.entity.CompilePrefab(tData.PrefabData, tData.PrefabName)
                 return
@@ -110,6 +115,10 @@ ACSE.tDatabaseMethods = {
     --/ have access to the tweakables
     GetAllTweakables = function()
         return api.acsedebug.GetTweakables()
+    end,
+    --/ get one tweakable
+    GetTweakable = function(_sName)
+        return api.acsedebug.GetDebugTweakable(_sName)
     end
 }
 
@@ -133,7 +142,7 @@ end
 ACSE.Init = function()
     ACSE._initLuaOverrides()
 
-    global.api.debug.Trace("ACSE:Init() running in " .. global.tostring( global.api.game.GetGameName() ))
+    global.api.debug.Trace("ACSE:Init() running in " .. global.tostring(global.api.game.GetGameName()))
 
     ACSE.tParkEnvironmentProtos = {SearchPaths = {}, Managers = {}}
     ACSE.tStartEnvironmentProtos = {SearchPaths = {}, Managers = {}}
@@ -175,8 +184,10 @@ ACSE.Init = function()
                 if nFoundModulesCount > 1 then
                     local allModulesList = table.concat(tFilteredLoadedModuleNames, "\n")
                     return false, "Found " ..
-                        global.tostring(nFoundModulesCount) ..' existing Tweakables matching the pattern "' ..
-                        sTweakableNamePattern .. '". You need to be more specific. \nPossible Tweakables:\n' .. allModulesList
+                        global.tostring(nFoundModulesCount) ..
+                            ' existing Tweakables matching the pattern "' ..
+                                sTweakableNamePattern ..
+                                    '". You need to be more specific. \nPossible Tweakables:\n' .. allModulesList
                 end
 
                 local sTweakableName = tFilteredLoadedModuleNames[1]
@@ -189,7 +200,7 @@ ACSE.Init = function()
                     tArgs[2] = global.tonumber(tArgs[2])
                 end
                 tweakable:SetValue(tArgs[2])
-                return true, "Tweakable " .. sTweakableName .. " set to: " .. global.tostring(tArgs[2]).. ".\n"
+                return true, "Tweakable " .. sTweakableName .. " set to: " .. global.tostring(tArgs[2]) .. ".\n"
             end,
             "&Set&Tweakable {string} {value}",
             "Changes the value of a tweakable.\n"
@@ -248,12 +259,12 @@ ACSE.Init = function()
                 local nNewTime = global.api.time.GetPerformanceTimer()
                 local nDiff = global.api.time.DiffPerformanceTimers(nNewTime, nStartTime)
                 local nDiffMs = global.api.time.PerformanceTimeToMilliseconds(nDiff)
-                global.api.debug.Trace( ("Completed in %.3f seconds."):format(nDiffMs / 1000) )
+                global.api.debug.Trace(("Completed in %.3f seconds."):format(nDiffMs / 1000))
                 return true, nil
             end,
             "&Rebuild&Custom&Prefabs [{string}]",
             "Rebuild all custom prefabs containing the specified optional string from the ACSE prefabs table.\n"
-        ),          
+        ),
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
                 global.api.debug.Trace("Custom Prefabs:")
@@ -266,7 +277,7 @@ ACSE.Init = function()
             end,
             "&List&Custom&Prefabs [{string}]",
             "List all custom prefabs containing the specified optional string.\n"
-        ),          
+        ),
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
                 global.api.debug.Trace("Game Prefabs:")
@@ -280,7 +291,7 @@ ACSE.Init = function()
             end,
             "&List&Prefabs [{string}]",
             "List all existing prefabs containing the specified optional string.\n"
-        ), 
+        ),
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
                 if #tArgs ~= 1 then
@@ -294,13 +305,13 @@ ACSE.Init = function()
                     local sName = global.string.gsub(sModuleName, "%.", "/")
                     pf, sMsg = global.loadfile(api.acse.devpath .. sName .. ".lua")
                 end
-                if pf ~= nil and global.type(pf) == 'function' then
+                if pf ~= nil and global.type(pf) == "function" then
                     local bOk, sMsg = global.pcall(pf, sModuleName)
                     if bOk == false then
                         return false, global.tostring(sMsg) .. "\n"
                     end
                 else
-                    return false, "Lua file not loaded: " .. global.tostring(sMsg) ..  "\n"
+                    return false, "Lua file not loaded: " .. global.tostring(sMsg) .. "\n"
                 end
             end,
             "&Load&File {string}",
@@ -320,7 +331,7 @@ ACSE.Init = function()
                         return false, global.tostring(sMsg) .. "\n"
                     end
                 else
-                    return false, "error: " .. global.tostring(sMsg) ..  "\n"
+                    return false, "error: " .. global.tostring(sMsg) .. "\n"
                 end
             end,
             "Lua {string}",
@@ -328,7 +339,6 @@ ACSE.Init = function()
         ),
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
-
                 global.api.debug.Trace("Named Databases:")
                 for k, v in global.pairs(GameDatabase.GetNamedDatabases()) do
                     if (tArgs[1] == nil or global.string.match(k, tArgs[1])) then
@@ -340,7 +350,7 @@ ACSE.Init = function()
             end,
             "&List&Databases [{string}]",
             "List all named databases containing the specified optional string.\n"
-        ),        
+        ),
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
                 if #tArgs < 2 then
@@ -350,24 +360,28 @@ ACSE.Init = function()
                 -- Get access to the game database interface
                 local database = global.api.database
                 local dbname = tArgs[1]
-                local query  = tArgs[2]
+                local query = tArgs[2]
                 local readon = tArgs[3] or false
 
-                if not database.NamedDatabaseExists(dbname) then return false, "Database " .. dbname .. " does not exist" end
+                if not database.NamedDatabaseExists(dbname) then
+                    return false, "Database " .. dbname .. " does not exist"
+                end
                 local bOldReadonly = database.GetReadOnly(dbname)
                 database.SetReadOnly(dbname, readon)
 
                 -- We need to bind our new Prepared Statement collection to the Buildings database before
                 -- we can use any of its statements.
-                local cQuery  = database.ExecuteSQL(dbname, query)
-                if cQuery == nil then return false, "SQL Error: malformed query." end
+                local cQuery = database.ExecuteSQL(dbname, query)
+                if cQuery == nil then
+                    return false, "SQL Error: malformed query."
+                end
 
-                local bRet = false 
+                local bRet = false
                 local sRet = "SQL Error: problem executing SQL query"
 
                 if database.Step(cQuery) == true then
                     local tResult = database.GetAllResults(cQuery, true)
-                    if global.type(tResult) == 'table' then 
+                    if global.type(tResult) == "table" then
                         sRet = table.tostring(tResult, nil, nil, nil, true)
                         bRet = true
                     end
@@ -432,7 +446,7 @@ ACSE.Init = function()
                     -- @TODO: Convert result to a global value accessible later
                     local tRows = database.GetAllResults(cPSInstance, false)
                     local result = tRows or {}
-                    if global.type(tResult) == 'table' then 
+                    if global.type(tResult) == "table" then
                         return true, table.tostring(tResult, nil, nil, nil, true)
                     end
                 else
@@ -491,8 +505,10 @@ ACSE.Init = function()
                 if nFoundModulesCount > 1 then
                     local allModulesList = (table.concat)(tFilteredLoadedModuleNames, "\n")
                     return false, "Found " ..
-                        global.tostring(nFoundModulesCount) ..' loaded modules matching the pattern "' ..
-                        sModuleNamePattern .. '". You need to be more specific. \nPossible modules:\n' .. allModulesList
+                        global.tostring(nFoundModulesCount) ..
+                            ' loaded modules matching the pattern "' ..
+                                sModuleNamePattern ..
+                                    '". You need to be more specific. \nPossible modules:\n' .. allModulesList
                 end
 
                 local sModuleName = tFilteredLoadedModuleNames[1]
@@ -515,7 +531,7 @@ ACSE.Init = function()
 
                     local module = global.tryrequire(sModuleName)
                     if module ~= nil then
-                      module.s_tInterfaces = nil
+                        module.s_tInterfaces = nil
                     end
 
                     local bOk = nil
@@ -524,7 +540,6 @@ ACSE.Init = function()
                     if not bOk then
                         return false, "Error reloading module: " .. global.tostring(sMsg)
                     end
-
                 else
                     return false, "File " .. sModuleName .. ".lua not found or wrong syntax.\n" .. global.tostring(sMsg)
                 end
@@ -546,13 +561,13 @@ ACSE.Init = function()
                 end
                 if pf ~= nil then
                     --global.package.preload[ tArgs[1] ] = pf
-                    global.package.preload[ tArgs[1] ] = pf
+                    global.package.preload[tArgs[1]] = pf
                     global.package.loaded[tArgs[1]] = nil
                     local a = global.require(tArgs[1])
 
-                    local fnMod, sErrorMessage = global.loadresource( tArgs[1] )
+                    local fnMod, sErrorMessage = global.loadresource(tArgs[1])
                     if not fnMod then
-                        return false, "Resource not found: " .. sErrorMessage 
+                        return false, "Resource not found: " .. sErrorMessage
                     end
                 else
                     return false, "Module import failed: " .. sModuleName .. ".lua not found\n" .. global.tostring(sMgs)
@@ -579,7 +594,7 @@ ACSE.Init = function()
             end,
             "&Remove&Module {string}",
             "Removes a Lua module to the Lua sandbox (do not specify .lua extension).\n"
-        )        
+        )
     }
 
     --/ Request Starting Screen Managers from other mods
@@ -604,7 +619,7 @@ ACSE.Init = function()
         end
     )
 
-    --/ Request Park Managers from other mods. The new format is using the 
+    --/ Request Park Managers from other mods. The new format is using the
     --/ environment name to override and prototype table to merge
     Main.CallOnContent(
         "AddManagers",
@@ -623,7 +638,7 @@ ACSE.Init = function()
             if type(_sName) == "string" and type(_tParams) == "table" then
                 if global.api.debug.Assert(ACSE.tLuaPrefabNames[_sName] == nil, "Duplicated Lua Prefab " .. _sName) then
                     ACSE.tLuaPrefabNames[_sName] = true
-                    table.append(ACSE.tLuaPrefabs, { PrefabName = _sName, PrefabData = _tParams })
+                    table.append(ACSE.tLuaPrefabs, {PrefabName = _sName, PrefabData = _tParams})
                 end
             end
         end
@@ -631,7 +646,9 @@ ACSE.Init = function()
     local nNewTime = global.api.time.GetPerformanceTimer()
     local nDiff = global.api.time.DiffPerformanceTimers(nNewTime, nStartTime)
     local nDiffMs = global.api.time.PerformanceTimeToMilliseconds(nDiff)
-    global.api.debug.Trace(("Loaded %d Lua prefabs in %.3f seconds"):format(table.count(ACSE.tLuaPrefabNames), (nDiffMs / 1000)))
+    global.api.debug.Trace(
+        ("Loaded %d Lua prefabs in %.3f seconds"):format(table.count(ACSE.tLuaPrefabNames), (nDiffMs / 1000))
+    )
 
     --/ Request Lua Components from other mods
     Main.CallOnContent(
@@ -645,30 +662,32 @@ ACSE.Init = function()
         end
     )
 
+
     --
     -- Consolidate all Start/Park managers of the old API to the new one
     --
-    
+
     -- Provide support for old method of adding startscreen managers
     for _sName, _tParams in global.pairs(ACSE.tStartEnvironmentProtos["Managers"]) do
-        ACSE.tEnvironmentProtos['Environments.StartScreenEnvironment'][_sName] = _tParams
+        ACSE.tEnvironmentProtos["Environments.StartScreenEnvironment"][_sName] = _tParams
     end
 
     -- Provide support for old method of adding Park managers
-    local sParkEnvironment = 'Environments.ParkEnvironment'
-    if api.game.GetGameName() == 'Planet Zoo' then sParkEnvironment = 'Environments.DarwinEnvironment' end
+    local sParkEnvironment = "Environments.ParkEnvironment"
+    if api.game.GetGameName() == "Planet Zoo" then
+        sParkEnvironment = "Environments.DarwinEnvironment"
+    end
     for _sName, _tParams in global.pairs(ACSE.tParkEnvironmentProtos["Managers"]) do
         ACSE.tEnvironmentProtos[sParkEnvironment][_sName] = _tParams
     end
 
-
     --/
     --/ Modify the environment files
-    --/ 
+    --/
     local addManagersToEnvironment = function(sEnvironment, tManagers)
         api.debug.Trace("Merging managers into " .. sEnvironment)
         -- Perform environment overrides
-        local modname  = sEnvironment
+        local modname = sEnvironment
         local tfMod = global.require(modname)
 
         --/ Required module will be in the package loaded table.
@@ -693,18 +712,20 @@ ACSE.Init = function()
             return a
         end
         --api.debug.Trace("Proto: " .. table.tostring(tMod.EnvironmentPrototype, nil, nil, nil, true))
-        for _sName, _tParams in global.pairs( tManagers ) do
-            if not _tParams.__inheritance or _tParams.__inheritance == 'Overwrite' then
+        for _sName, _tParams in global.pairs(tManagers) do
+            if not _tParams.__inheritance or _tParams.__inheritance == "Overwrite" then
                 api.debug.Trace("Adding Manager: " .. _sName)
-                tMod.EnvironmentPrototype['Managers'][_sName] = _tParams
+                tMod.EnvironmentPrototype["Managers"][_sName] = _tParams
             end
-            if _tParams.__inheritance == 'Append' then
+            if _tParams.__inheritance == "Append" then
                 api.debug.Trace("Merging Manager: " .. _sName)
-                tMod.EnvironmentPrototype['Managers'][_sName] = _merge(tMod.EnvironmentPrototype['Managers'][_sName], _tParams)
+                tMod.EnvironmentPrototype["Managers"][_sName] =
+                    _merge(tMod.EnvironmentPrototype["Managers"][_sName], _tParams)
             end
-            if _tParams.__inheritance == 'Modify' then
+            if _tParams.__inheritance == "Modify" then
                 api.debug.Trace("Modifying Manager: " .. _sName)
-                tMod.EnvironmentPrototype['Managers'][_sName] = _merge(tMod.EnvironmentPrototype['Managers'][_sName], _tParams, true)
+                tMod.EnvironmentPrototype["Managers"][_sName] =
+                    _merge(tMod.EnvironmentPrototype["Managers"][_sName], _tParams, true)
             end
             -- Any other case will be ignored
         end
@@ -716,48 +737,227 @@ ACSE.Init = function()
 
     -- Merge all environment changes to the right modules
     for sModName, tParams in global.pairs(ACSE.tEnvironmentProtos) do
-        addManagersToEnvironment(sModName, tParams )
+        addManagersToEnvironment(sModName, tParams)
     end
 
 
-    --[[    
-    -- Hook into the UIManager
-    local modname  = 'uimanager'
-    local tfMod = global.require(modname)
+
+    --/
+    --/ Hook into the main game settings controller
+    --/
+    --/
+    local modname = "windows.gameplayoptionsmenu"
+    if api.game.GetGameName() == "Planet Zoo" then
+        modname = "windows.gameoptionsmenu"
+    end
+    global.require(modname)
 
     --/ Required module will be in the package loaded table.
     local tMod = global.package.preload[modname] or global.package.loaded[modname]
+    global.api.debug.Assert(tMod ~= nil, "Can't find " .. modname .. " resource")
 
-    --/ if still not found use the loaded table from require
-    tMod = tMod or tfMod
-    global.api.debug.Assert(tMod ~= nil, "Can't find " .. modname .. "  resource")
-
-    api.debug.Trace("UIManager: " .. table.tostring(tMod))
-
-    if global.type(tMod) == 'table' then
-
-        tMod.oldGetGUIWrapper = tMod.GetGUIWrapper
-        tMod.GetGUIWrapper = function(self, sModuleName, sUIName, bReuse)
-            if global.api.acse.uiWrappers == nil then global.api.acse.uiWrappers = {} end
-            local ret = nil
-            if bReuse == true then  
-                api.debug.Trace("Reusing GUI Wrapper") 
-                ret = global.api.acse.uiWrappers[ sModuleName .. sUIName ]
-            else 
-                ret = self:oldGetGUIWrapper(sModuleName, sUIName)
-                global.api.acse.uiWrappers[ sModuleName .. sUIName ] = ret
+    -- Handles building the menu list to mods
+    if not tMod.ACSEGetItems then
+        -- This code is used to send the game settings item list to mods
+        tMod.ACSEGetItems = tMod.GetItems
+        tMod.GetItems = function(self, _tSettingsMenuItemsData)
+            self:ACSEGetItems(_tSettingsMenuItemsData)
+            for _, handler in ipairs(global.api.acse._tGameSettingsRegistrations) do
+                if handler.fGetItems then
+                    handler.fGetItems(_tSettingsMenuItemsData['items'])
+                end
             end
-            api.debug.Trace("UIManager:GetGUIWrapper(" .. global.tostring(sModuleName) .. ", " .. global.tostring(sUIName) .. ") = " .. global.tostring(ret))
+        end
+    end
+
+    -- Handles sending events to the mods
+    if not tMod.ACSEHandleEvent then
+        -- This code is used to send the game settings item list to mods
+        tMod.ACSEHandleEvent = tMod.HandleEvent
+        tMod.HandleEvent = function(self, _sID, _arg)
+            local bHandled, bNeedsRefresh = self:ACSEHandleEvent(_sID, _arg)
+            for _, handler in ipairs(global.api.acse._tGameSettingsRegistrations) do
+                if handler.fHandleEvent then
+                    bHandled, bNeedsRefresh = handler.fHandleEvent(_sID, _arg, bHandled, bNeedsRefresh )
+                end
+            end
+            return bHandled, bNeedsRefresh
+        end
+    end
+
+    -- Handles applying changes to the settings
+    if not tMod.ACSEApplyChanges then
+        tMod.ACSEApplyChanges = tMod.ApplyChanges
+        tMod.ApplyChanges = function(self)
+            local ret = self:ACSEApplyChanges()
+            for _, handler in ipairs(global.api.acse._tGameSettingsRegistrations) do
+                if handler.fApplyChanges then
+                    ret = handler.fApplyChanges()
+                end
+            end
             return ret
         end
-
-
-        --/ We move the resource to the preload table, so Lua wont need to load it again and
-        --/ will return our changes
-        global.package.preload[modname] = tMod
     end
-    ]]
 
+    --/ We move the resource to the preload table, so Lua wont need to load it again and
+    --/ will return our changes
+    global.package.preload[modname] = tMod
+
+
+
+    --/
+    --/ Hook into the sandbox game settings controller
+    --/
+    --/
+    local modname = "windows.sandboxoptionsmenu"
+    if api.game.GetGameName() == "Planet Zoo" then
+        modname = "windows.sandboxoptionsmenu"
+    end
+    global.require(modname)
+
+    --/ Required module will be in the package loaded table.
+    local tMod = global.package.preload[modname] or global.package.loaded[modname]
+    global.api.debug.Assert(tMod ~= nil, "Can't find " .. modname .. " resource")
+
+    -- Handles building the menu list to mods
+    if not tMod.ACSEGetItems then
+        -- This code is used to send the game settings item list to mods
+        tMod.ACSEGetItems = tMod.GetItems
+        tMod.GetItems = function(self, _tSettingsMenuItemsData)
+            self:ACSEGetItems(_tSettingsMenuItemsData)
+            for _, handler in ipairs(global.api.acse._tSandboxSettingsRegistrations) do
+                if handler.fGetItems then
+                    handler.fGetItems(_tSettingsMenuItemsData['items'])
+                end
+            end
+        end
+    end
+
+    -- Handles sending events to the mods
+    if not tMod.ACSEHandleEvent then
+        -- This code is used to send the game settings item list to mods
+        tMod.ACSEHandleEvent = tMod.HandleEvent
+        tMod.HandleEvent = function(self, _sID, _arg)
+            local bHandled, bNeedsRefresh = self:ACSEHandleEvent(_sID, _arg)
+            for _, handler in ipairs(global.api.acse._tSandboxSettingsRegistrations) do
+                if handler.fHandleEvent then
+                    bHandled, bNeedsRefresh = handler.fHandleEvent(_sID, _arg, bHandled, bNeedsRefresh )
+                end
+            end
+            return bHandled, bNeedsRefresh
+        end
+    end
+
+    -- Handles applying changes to the settings
+    if not tMod.ACSEApplyChanges then
+        tMod.ACSEApplyChanges = tMod.ApplyChanges
+        tMod.ApplyChanges = function(self)
+            local ret = self:ACSEApplyChanges()
+            for _, handler in ipairs(global.api.acse._tSandboxSettingsRegistrations) do
+                if handler.fApplyChanges then
+                    ret = handler.fApplyChanges()
+                end
+            end
+            return ret
+        end
+    end
+
+    --/ We move the resource to the preload table, so Lua wont need to load it again and
+    --/ will return our changes
+    global.package.preload[modname] = tMod
+
+
+
+    --/
+    --/ Hook into the keyboard controls settings controller
+    --/
+    --/
+    local modname = "windows.keyboardoptionsmenu"
+    if api.game.GetGameName() == "Planet Zoo" then
+        modname = "windows.controlsoptionsmenu"
+    end
+    global.require(modname)
+
+    --/ Required module will be in the package loaded table.
+    local tMod = global.package.preload[modname] or global.package.loaded[modname]
+    global.api.debug.Assert(tMod ~= nil, "Can't find " .. modname .. " resource")
+
+    -- Handles building the menu list to mods
+    if not tMod.ACSEGetItems then
+        -- This code is used to send the game settings item list to mods
+        tMod.ACSEGetItems = tMod.GetItems
+        tMod.GetItems = function(self, _tSettingsMenuItemsData)
+            self:ACSEGetItems(_tSettingsMenuItemsData)
+            for _, handler in ipairs(global.api.acse._tControlsSettingsRegistrations) do
+                if handler.fGetItems then
+                    handler.fGetItems(_tSettingsMenuItemsData['items'])
+                end
+            end
+        end
+    end
+
+    -- Handles sending events to the mods
+    if not tMod.ACSEHandleEvent then
+        -- This code is used to send the game settings item list to mods
+        tMod.ACSEHandleEvent = tMod.HandleEvent
+        tMod.HandleEvent = function(self, _sID, _arg)
+            local bHandled, bNeedsRefresh = self:ACSEHandleEvent(_sID, _arg)
+
+            local fRebind = function(sControlName) 
+                if api.game.GetGameName() == "Planet Zoo" then
+                    self:RebindButtonFlow(sControlName)
+                    local tNewItems = {}
+                    self:GetItems(tNewItems)
+                    self.guiWrapper:SetSettingsMenuContentData(tNewItems)
+                else -- JWE1/2
+                    tData = {
+                        ["type"] = 1,
+                        ["control"] = sControlName,
+                        ["label"] = "",
+                        ["targets"] = {
+                            [1] = 0
+                        }
+                    }
+                    self:HandleRebind(tData)
+                end
+            end
+
+            local fUnbind = function(sControlName)
+                api.input.RemoveLogicalButtonRebind(sControlName)
+                if api.game.GetGameName() == "Planet Zoo" then
+                    -- Need to enforce a refresh
+                    local tNewItems = {}
+                    self:GetItems(tNewItems)
+                    self.guiWrapper:SetSettingsMenuContentData(tNewItems)
+                end
+            end
+
+            for _, handler in ipairs(global.api.acse._tControlsSettingsRegistrations) do
+                if handler.fHandleEvent then
+                    bHandled, bNeedsRefresh = handler.fHandleEvent(_sID, _arg, bHandled, bNeedsRefresh, fRebind, fUnbind)
+                end
+            end
+            return bHandled, bNeedsRefresh
+        end
+    end
+
+    -- Handles applying changes to the settings
+    if not tMod.ACSEApplyChanges then
+        tMod.ACSEApplyChanges = tMod.ApplyChanges
+        tMod.ApplyChanges = function(self)
+            local ret = self:ACSEApplyChanges()
+            for _, handler in ipairs(global.api.acse._tControlsSettingsRegistrations) do
+                if handler.fApplyChanges then
+                    ret = handler.fApplyChanges()
+                end
+            end
+            return ret
+        end
+    end
+
+    --/ We move the resource to the preload table, so Lua wont need to load it again and
+    --/ will return our changes
+    global.package.preload[modname] = tMod
 
 
 end
@@ -787,7 +987,7 @@ ACSE.AddDatabaseFunctions = function(_tDatabaseFunctions)
     end
 end
 
---[[
+--[[ Old way to add managers, still compatible
 -- List of custom managers to force injection on the starting screen
 ACSE.tStartScreenManagers = {
     ["Managers.ACSEStartScreenManager"] = {}
@@ -814,10 +1014,11 @@ ACSE.AddParkManagers = function(_fnAdd)
     end
 end
 ]]
-
 -- List of custom managers to force injection on a park, park manager depends on game title.
-local sParkEnvironment = 'Environments.ParkEnvironment'
-if api.game.GetGameName() == 'Planet Zoo' then sParkEnvironment = 'Environments.DarwinEnvironment' end
+local sParkEnvironment = "Environments.ParkEnvironment"
+if api.game.GetGameName() == "Planet Zoo" then
+    sParkEnvironment = "Environments.DarwinEnvironment"
+end
 
 ACSE.tManagers = {
     ["Environments.StartScreenEnvironment"] = {
@@ -825,7 +1026,7 @@ ACSE.tManagers = {
     },
     [sParkEnvironment] = {
         ["Managers.ACSEParkManager"] = {}
-    },
+    }
 }
 
 -- @brief Add our custom Manager to the different environments
@@ -841,30 +1042,29 @@ ACSE._initLuaOverrides = function()
     global.api.debug.Trace("Initializing lua overrides")
 
     -- Perform Lua override
-    local rdebug           = global.api.debug
-    local entity           = global.api.entity
-    local database         = global.api.database
+    local rdebug = global.api.debug
+    local entity = global.api.entity
+    local database = global.api.database
     local componentmanager = global.api.componentmanager
 
-    api.debug            = global.setmetatable(api.acsedebug,            {__index = rdebug          })
+    api.debug = global.setmetatable(api.acsedebug, {__index = rdebug})
     api.componentmanager = global.setmetatable(api.acsecomponentmanager, {__index = componentmanager})
-    api.entity           = global.setmetatable(api.acseentity,           {__index = entity          })
-    api.database         = global.setmetatable(api.acsedatabase,         {__index = database        })
+    api.entity = global.setmetatable(api.acseentity, {__index = entity})
+    api.database = global.setmetatable(api.acsedatabase, {__index = database})
 
     -- other Inits
     api.entity.tLoadedEntities = {}
-    api.database.tDatabases    = {}
+    api.database.tDatabases = {}
 end
 
 -- @Brief Undo all Lua changes so the game exists gracefully
 ACSE._shutdownLuaOverrides = function()
     --  Perform clean ups
-    api.database.tDatabases    = {}
+    api.database.tDatabases = {}
     api.entity.tLoadedEntities = {}
 
-    api.database          = global.getmetatable(api.database        ).__index
-    api.entity            = global.getmetatable(api.entity          ).__index
-    api.componentmanager  = global.getmetatable(api.componentmanager).__index
-    api.debug             = global.getmetatable(api.debug           ).__index
+    api.database = global.getmetatable(api.database).__index
+    api.entity = global.getmetatable(api.entity).__index
+    api.componentmanager = global.getmetatable(api.componentmanager).__index
+    api.debug = global.getmetatable(api.debug).__index
 end
-

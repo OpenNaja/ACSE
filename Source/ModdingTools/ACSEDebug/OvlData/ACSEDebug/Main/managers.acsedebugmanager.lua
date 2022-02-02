@@ -179,12 +179,100 @@ ACSEDebugManager.Init = function(self, _tProperties, _tEnvironment)
 
     }
 
+    --/
+    --/ Add Control Settings
+    --/
+    local fnGetItems = function(tMenuItems)
+        self:GetMenuItems(tMenuItems)
+    end
+    local fnHandleEvent = function(_sID, _arg, bHandled, bRefresh, rebindFunction, unbindFunction)
+        if _sID == 'keyboardsettings:acsedebug:toggleconsole' then
+            rebindFunction('ACSEDebug_ToggleConsole')
+            return true, true
+        end
+        if _sID == 'keyboardsettings:acsedebug:unbind:toggleconsole' then
+            unbindFunction('ACSEDebug_ToggleConsole')
+            return true, true
+        end
+        return bHandled, bRefresh
+    end
+    -- Register our custom control settings
+    self.ControlsSettingsHandler = global.api.acse.RegisterControlsSettingsHandler(fnGetItems, fnHandleEvent)
+
 end
+
+
+ACSEDebugManager.GetMenuItems = function(self, tMenuItems)
+    api.debug.Trace("ACSEDebugManager.GetMenuItems()")
+
+    -- We provide both menues now, for JWE1/2 or PZ
+    if api.game.GetGameName() == "Planet Zoo" then
+
+        local tItem = {
+            ["label"] = "[STRING_LITERAL:Value=\'Debug\']",
+            ["items"] =
+            {
+                {
+                    ["label"] = "[STRING_LITERAL:Value=\'Console UI\']",
+                    ["secondLabel"] = "[OptionsMenu_Controls_Text:ControlText='".. api.input.GetTextDescriptionForLogicalButton('ACSEDebug_ToggleConsole') .."']",
+                    ["id"] = "customcontrols.acsedebug.toggleconsole",
+                    ["itemRendererClass"] = "DoubleLabelRenderer",
+                    ["items"] =
+                    {
+                            {
+                                    ["toolTip"] = "[OptionsMenu_Controls_Rebind_Button]",
+                                    ["toggled"] = false,
+                                    ["id"] = "keyboardsettings:acsedebug:toggleconsole",
+                                    ["text"] = "",
+                                    ["streamedIcon"] = "PopUpIconEditName"
+                            },
+                            {
+                                    ["toolTip"] = "[OptionsMenu_Controls_Unbind_Button]",
+                                    ["toggled"] = false,
+                                    ["text"] = "",
+                                    ["id"] = "keyboardsettings:acsedebug:unbind:toggleconsole",
+                                    ["enabled"] = api.input.GetLogicalButtonRebound('ACSEDebug_ToggleConsole'),
+                                    ["streamedIcon"] = "PopUpIconResetMusic"
+                            }
+                    },
+                }
+            },
+            ["id"] = "controls.acsedebug.container",
+            ["itemRendererClass"] = "ExpandableContainer",
+            ["open"] = false
+        }
+        table.insert(tMenuItems, 4, tItem)
+
+    else -- JWE1/2
+        local tItem = {
+            ["index"] = 1,
+            ["label"] = "[STRING_LITERAL:Value=\'Debug\']",
+            ["id"] = "keyboardsettings_debug",
+            ["itemRendererClass"] = 4                
+        }
+        table.insert(tMenuItems, 1, tItem)
+
+        local tItem = {
+            ['index'] = 2,
+            ["label"] = "[STRING_LITERAL:Value=\'Toggle Console\']",
+            ["valueLabel"] = "[INPUT_ICON:InputName=#LogicalButton.ACSEDebug_ToggleConsole:device=keyboard#]",
+            ["tooltipDescription"] = "[STRING_LITERAL:Value=\'Toggles visibility of the debug consonle On/Off\']",
+            ["tooltipTitle"] = "[STRING_LITERAL:Value=\'Toggle Console\']",
+            ["id"] = "keyboardsettings:acsedebug:toggleconsole",
+            ["itemRendererClass"] = 5
+        }
+        table.insert(tMenuItems, 2, tItem)
+    end
+
+end
+
+
 
 ACSEDebugManager.Activate = function(self)
     global.api.debug.Trace("ACSEDebugManager.Activate()")
     self:_setVisible(false)
 end
+
 
 -- @brief ugly loop to track key down event
 ACSEDebugManager._updateKeyStatus = function(self)
@@ -275,6 +363,10 @@ ACSEDebugManager.Shutdown = function(self)
     -- Remove custom commands
     for i, oCommand in ipairs(self.tShellCommands) do
         api.debug.UnregisterShellCommand(oCommand)
+    end
+
+    if self.ControlsSettingsHandler then
+        api.acse.UnregisterControlsSettingsHandler(self.ControlsSettingsHandler)
     end
 end
 
