@@ -14,7 +14,7 @@ local ipairs = ipairs
 local require = require
 local tostring = tostring
 local coroutine = coroutine
-local table = table
+local table = require("common.tableplus")
 local math = math
 local next = next
 local Trace = global.api.debug.Trace
@@ -176,7 +176,9 @@ ACSEDebugManager.Init = function(self, _tProperties, _tEnvironment)
             "Copies the content of the log window to the clipboard. (Not working currently)\n"
         )
 		]]
+
     }
+
 end
 
 ACSEDebugManager.Activate = function(self)
