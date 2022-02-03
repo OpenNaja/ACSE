@@ -14,28 +14,23 @@ local ipairs = global.ipairs
 --/ Module creation
 local ACSEDebug = module(...)
 
--- List of custom managers to force injection on the starting screen,
--- we define our own window manager
-ACSEDebug.tStartScreenManagers = {
-    ["Managers.ACSEDebugManager"] = {}
-}
-
--- @brief Add our custom Manager to the starting screen
-ACSEDebug.AddStartScreenManagers = function(_fnAdd)
-    local tData = ACSEDebug.tStartScreenManagers
-    for sManagerName, tParams in pairs(tData) do
-        _fnAdd(sManagerName, tParams)
-    end
+-- List of custom managers to force injection
+local sParkEnvironment = "Environments.ParkEnvironment"
+if api.game.GetGameName() == "Planet Zoo" then
+    sParkEnvironment = "Environments.DarwinEnvironment"
 end
-
--- List of custom managers to force injection on a park
-ACSEDebug.tParkManagers = {
-    ["Managers.ACSEDebugManager"] = {}
+ACSEDebug.tManagers = {
+    ["Environments.StartScreenEnvironment"] = {
+        ["Managers.ACSEDebugManager"] = {},
+    },
+    [sParkEnvironment] = {
+        ["Managers.ACSEDebugManager"] = {}
+    }
 }
 
--- @brief Add our custom Manager to the starting screen
-ACSEDebug.AddParkManagers = function(_fnAdd)
-    local tData = ACSEDebug.tParkManagers
+-- @brief Add our custom Manager to the different environments
+ACSEDebug.AddManagers = function(_fnAdd)
+    local tData = ACSEDebug.tManagers
     for sManagerName, tParams in pairs(tData) do
         _fnAdd(sManagerName, tParams)
     end

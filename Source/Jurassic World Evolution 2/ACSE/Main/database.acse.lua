@@ -21,8 +21,6 @@ local GameDatabase = require("Database.GameDatabase")
 local ACSE = module(...)
 
 -- List of protos/managers to populate from other mods
-ACSE.tParkEnvironmentProtos = {}
-ACSE.tStartEnvironmentProtos = {}
 ACSE.tEnvironmentProtos = {}
 
 -- List of lua Prefabs to populate from other mods
@@ -34,21 +32,9 @@ ACSE.tLuaComponents = {}
 
 -- Definition of our own database methods
 ACSE.tDatabaseMethods = {
-    --/ Park environment hook
-    GetParkEnvironmentProtos = function()
-        return ACSE.tParkEnvironmentProtos
-    end,
-    --/ Starting screen environment hook
-    GetStartEnvironmentProtos = function()
-        return ACSE.tStartEnvironmentProtos
-    end,
-    --/ Starting screen environment managers
-    GetStartEnvironmentManagers = function()
-        return ACSE.tStartEnvironmentProtos["Managers"]
-    end,
-    --/ park environment managers
-    GetParkEnvironmentManagers = function()
-        return ACSE.tParkEnvironmentProtos["Managers"]
+    --/ global environment hook
+    GetEnvironmentProtos = function()
+        return ACSE.tEnvironmentProtos
     end,
     --/ sql databases
     GetNamedDatabases = function()
@@ -59,6 +45,7 @@ ACSE.tDatabaseMethods = {
         return ACSE.tLuaComponents
     end,
     --/ Lua prefabs
+    --/ Todo: save compiled prefab token as the value into the prefabNames table instead of a true
     GetLuaPrefabs = function()
         return ACSE.tLuaPrefabs
     end,
@@ -146,6 +133,7 @@ ACSE.Init = function()
 
     ACSE.tParkEnvironmentProtos = {SearchPaths = {}, Managers = {}}
     ACSE.tStartEnvironmentProtos = {SearchPaths = {}, Managers = {}}
+    ACSE.tEnvironmentProtos = {}
     ACSE.tLuaPrefabs = {}
     ACSE.tLuaPrefabNames = {}
 
@@ -602,8 +590,14 @@ ACSE.Init = function()
         "AddStartScreenManagers",
         function(_sName, _tParams)
             if type(_sName) == "string" and type(_tParams) == "table" then
-                api.debug.Trace("Manager: " .. _sName .. " is being added using AddStartScreenManagers (obsolete API).")
-                ACSE.tStartEnvironmentProtos["Managers"][_sName] = _tParams
+                api.debug.Warning("Manager: " .. _sName .. " is being added using AddStartScreenManagers (obsolete API).")
+                local tItem = {
+                    sName = "Environments.StartScreenEnvironment",
+                    tData = {
+                        [_sName] = _tParams
+                    },
+                }
+                table.insert(ACSE.tEnvironmentProtos, tItem)
             end
         end
     )
@@ -613,8 +607,21 @@ ACSE.Init = function()
         "AddParkManagers",
         function(_sName, _tParams)
             if type(_sName) == "string" and type(_tParams) == "table" then
-                api.debug.Trace("Manager: " .. _sName .. " is being added using AddParkManagers (obsolete API).")
-                ACSE.tParkEnvironmentProtos["Managers"][_sName] = _tParams
+                api.debug.Warning("Manager: " .. _sName .. " is being added using AddParkManagers (obsolete API).")
+
+                -- Provide support for old method of adding Park managers
+                local sParkEnvironment = "Environments.ParkEnvironment"
+                if api.game.GetGameName() == "Planet Zoo" then
+                    sParkEnvironment = "Environments.DarwinEnvironment"
+                end
+
+                local tItem = {
+                    sName = sParkEnvironment,
+                    tData = {
+                        [_sName] = _tParams
+                    },
+                }
+                table.insert(ACSE.tEnvironmentProtos, tItem)
             end
         end
     )
@@ -625,7 +632,13 @@ ACSE.Init = function()
         "AddManagers",
         function(_sName, _tParams)
             if type(_sName) == "string" and type(_tParams) == "table" then
-                ACSE.tEnvironmentProtos[_sName] = _tParams
+                table.insert(
+                    ACSE.tEnvironmentProtos, 
+                    {   
+                        sName = _sName,
+                        tData = _tParams
+                    }
+                )
             end
         end
     )
@@ -655,37 +668,18 @@ ACSE.Init = function()
         "AddLuaComponents",
         function(_sName, _tParams)
             if type(_sName) == "string" and type(_tParams) == "string" then
-                global.api.debug.Trace("adding component: " .. _sName)
+                global.api.debug.Trace("Adding component: " .. _sName)
                 global.api.debug.Assert(ACSE.tLuaComponents[_sName] == nil, "Duplicated Lua Component " .. _sName)
                 ACSE.tLuaComponents[_sName] = _tParams
             end
         end
     )
 
-
-    --
-    -- Consolidate all Start/Park managers of the old API to the new one
-    --
-
-    -- Provide support for old method of adding startscreen managers
-    for _sName, _tParams in global.pairs(ACSE.tStartEnvironmentProtos["Managers"]) do
-        ACSE.tEnvironmentProtos["Environments.StartScreenEnvironment"][_sName] = _tParams
-    end
-
-    -- Provide support for old method of adding Park managers
-    local sParkEnvironment = "Environments.ParkEnvironment"
-    if api.game.GetGameName() == "Planet Zoo" then
-        sParkEnvironment = "Environments.DarwinEnvironment"
-    end
-    for _sName, _tParams in global.pairs(ACSE.tParkEnvironmentProtos["Managers"]) do
-        ACSE.tEnvironmentProtos[sParkEnvironment][_sName] = _tParams
-    end
-
     --/
-    --/ Modify the environment files
+    --/ Modify the environment files, it'd need a better way to handle this, this is 
+    --/ very inefficient.
     --/
     local addManagersToEnvironment = function(sEnvironment, tManagers)
-        api.debug.Trace("Merging managers into " .. sEnvironment)
         -- Perform environment overrides
         local modname = sEnvironment
         local tfMod = global.require(modname)
@@ -714,16 +708,16 @@ ACSE.Init = function()
         --api.debug.Trace("Proto: " .. table.tostring(tMod.EnvironmentPrototype, nil, nil, nil, true))
         for _sName, _tParams in global.pairs(tManagers) do
             if not _tParams.__inheritance or _tParams.__inheritance == "Overwrite" then
-                api.debug.Trace("Adding Manager: " .. _sName)
+                api.debug.Trace("Adding Manager: " .. _sName .. " in " .. sEnvironment)
                 tMod.EnvironmentPrototype["Managers"][_sName] = _tParams
             end
             if _tParams.__inheritance == "Append" then
-                api.debug.Trace("Merging Manager: " .. _sName)
+                api.debug.Trace("Merging Manager: " .. _sName .. " in " .. sEnvironment)
                 tMod.EnvironmentPrototype["Managers"][_sName] =
                     _merge(tMod.EnvironmentPrototype["Managers"][_sName], _tParams)
             end
             if _tParams.__inheritance == "Modify" then
-                api.debug.Trace("Modifying Manager: " .. _sName)
+                api.debug.Trace("Modifying Manager: " .. _sName .. " in " .. sEnvironment)
                 tMod.EnvironmentPrototype["Managers"][_sName] =
                     _merge(tMod.EnvironmentPrototype["Managers"][_sName], _tParams, true)
             end
@@ -736,11 +730,9 @@ ACSE.Init = function()
     end
 
     -- Merge all environment changes to the right modules
-    for sModName, tParams in global.pairs(ACSE.tEnvironmentProtos) do
-        addManagersToEnvironment(sModName, tParams)
+    for _, tParams in global.ipairs(ACSE.tEnvironmentProtos) do
+        addManagersToEnvironment(tParams.sName, tParams.tData)
     end
-
-
 
     --/
     --/ Hook into the main game settings controller
@@ -867,7 +859,6 @@ ACSE.Init = function()
     global.package.preload[modname] = tMod
 
 
-
     --/
     --/ Hook into the keyboard controls settings controller
     --/
@@ -987,6 +978,7 @@ ACSE.AddDatabaseFunctions = function(_tDatabaseFunctions)
     end
 end
 
+
 --[[ Old way to add managers, still compatible
 -- List of custom managers to force injection on the starting screen
 ACSE.tStartScreenManagers = {
@@ -1014,15 +1006,17 @@ ACSE.AddParkManagers = function(_fnAdd)
     end
 end
 ]]
--- List of custom managers to force injection on a park, park manager depends on game title.
+
+-- List of custom managers to force injection on a park, because ACSE source
+-- works for both PZ and JWE we need to identify the current game to fill the 
+-- right table
 local sParkEnvironment = "Environments.ParkEnvironment"
 if api.game.GetGameName() == "Planet Zoo" then
     sParkEnvironment = "Environments.DarwinEnvironment"
 end
-
 ACSE.tManagers = {
     ["Environments.StartScreenEnvironment"] = {
-        ["Managers.ACSEStartScreenManager"] = {}
+        ["Managers.ACSEStartScreenManager"] = {},
     },
     [sParkEnvironment] = {
         ["Managers.ACSEParkManager"] = {}

@@ -35,7 +35,7 @@ ACSEComponentManager.Construct = function(self, _nComponentManagerID)
     local ComponentManagerCustomId = 10000
     if GameDatabase.GetLuaComponents then
         for _sName, _tParams in pairs(GameDatabase.GetLuaComponents()) do
-            api.debug.Trace("ACSE Adding Component: " .. _sName) -- .. " with Id " .. ComponentManagerCustomId )
+            api.debug.Trace("ACSEComponentManager Adding Component: " .. _sName) -- .. " with Id " .. ComponentManagerCustomId )
             local fComponent = require(_tParams)
             local Component = fComponent:new()
             Component:Construct(ComponentManagerCustomId)
