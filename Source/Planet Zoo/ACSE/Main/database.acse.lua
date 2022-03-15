@@ -1121,9 +1121,10 @@ ACSE.tManagers = {
     [sParkEnvironment] = {
         ["Managers.ACSEParkManager"] = {}
     },
-    ["Environments.ModelViewerEnvironment"] = {
-        ["Managers.ACSEParkManager"] = {}
-    }
+--  this is JWE2 specific    
+--    ["Environments.ModelViewerEnvironment"] = {
+--        ["Managers.ACSEParkManager"] = {}
+--    }
 }
 
 -- @brief Add our custom Manager to the different environments
