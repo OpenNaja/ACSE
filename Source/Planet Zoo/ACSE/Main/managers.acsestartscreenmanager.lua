@@ -91,10 +91,12 @@ ACSEStartScreenManager.Init = function(self, _tProperties, _tEnvironment)
         --/ will return our changes
         global.package.preload[modname] = tstartscreenhud
     end
+    api.debug.Trace("ACSEStartScreenManager:Init()")
 end
 
 -- @Brief Activate function for this manager
 ACSEStartScreenManager.Activate = function(self)
+    api.debug.Trace("ACSEStartScreenManager:Activate()")
 end
 
 -- @Brief Update function for this manager
@@ -108,6 +110,7 @@ end
 
 -- @Brief Deactivate function for this manager
 ACSEStartScreenManager.Deactivate = function(self)
+    api.debug.Trace("ACSEStartScreenManager:Activate()")
 end
 
 -- @Brief Shutdown function for this manager
@@ -116,4 +119,4 @@ ACSEStartScreenManager.Shutdown = function(self)
 end
 
 --/ Validate class methods and interfaces
-(Mutators.VerifyManagerModule)(ACSEStartScreenManager)
+Mutators.VerifyManagerModule(ACSEStartScreenManager)

@@ -17,7 +17,7 @@ local type = global.type
 local Object = require("Common.object")
 local Base = require("LuaComponentManagerBase")
 local GameDatabase = require("Database.GameDatabase")
-local ACSEComponentManager = module(..., (Object.subclass)(Base))
+local ACSEComponentManager = module(..., Object.subclass(Base))
 
 --global.api.debug.Trace("LOADING ACSEComponentManager")
 
@@ -46,7 +46,7 @@ ACSEComponentManager.Construct = function(self, _nComponentManagerID)
 end
 
 ACSEComponentManager.Configure = function(self)
-    --global.api.debug.Trace("ACSEComponentManager:Configure()")
+    global.api.debug.Trace("ACSEComponentManager:Configure()")
     --We are not providing any feature, we don't require any feature
     for sName, Component in pairs(self.Components) do
         Component:Configure()
@@ -54,11 +54,21 @@ ACSEComponentManager.Configure = function(self)
 end
 
 ACSEComponentManager.OnWorldActivation = function(self)
---  api.debug.Trace("ACSEComponentManager:OnWorldActivation()")
+    api.debug.Trace("ACSEComponentManager:OnWorldActivation()")
+    for sName, Component in pairs(self.Components) do
+        if Component.OnWorldActivation then
+            Component:OnWorldActivation()
+        end
+    end
 end
 
 ACSEComponentManager.OnWorldDeactivation = function(self)
---  api.debug.Trace("ACSEComponentManager:OnWorldDeactivation()")
+    api.debug.Trace("ACSEComponentManager:OnWorldDeactivation()")
+    for sName, Component in pairs(self.Components) do
+        if Component.OnWorldDeactivation then
+            Component:OnWorldDeactivation()
+        end
+    end
 end
 
 -- Don't think we ever need this, our custom components maight not have a valid feature IDs
@@ -70,16 +80,21 @@ ACSEComponentManager.Init = function(self, _tWorldAPIs)
     global.api.debug.Trace("ACSEComponentManager:Init()")
 
     -- Custom component init
-    local tWorldAPIs = api.world.GetWorldAPIs()
-    self.worldserialisation = tWorldAPIs.worldserialisation
-    self.transformAPI = tWorldAPIs.transform
+    self._tWorldAPIs = _tWorldAPIs
+
+    self.tWorldAPIs = api.world.GetWorldAPIs()
+    self.worldserialisation = self.tWorldAPIs.worldserialisation
+    self.transformAPI = self.tWorldAPIs.transform
     local fnSave = function(_tSave)
+        --api.debug.Trace("ACSEComponentManager:nfSave")
         return self:WorldSerialisationClient_Save(_tSave)
     end
     local fnLoad = function(_tLoad, _nLoadedVersion)
+        --api.debug.Trace("ACSEComponentManager:fnLoad()")
         return self:WorldSerialisationClient_Load(_tLoad, _nLoadedVersion)
     end
     local fnCanLoadOldVersion = function(_nOldVersion)
+        --api.debug.Trace("ACSEComponentManager:fnCanLoadOldVersion")
         return true
     end
     self.worldserialisation:RegisterWorldSerialisationClient(
@@ -93,32 +108,39 @@ ACSEComponentManager.Init = function(self, _tWorldAPIs)
 
     -- Component manager init
     for sName, Component in pairs(self.Components) do
-        Component:Init(_tWorldAPIs)
+        Component:Init(self._tWorldAPIs)
 
         -- Expose component API to World APIs
         if #Component.tAPI > 0 then
             global.api.debug.Assert(global.api.sName == nil, "Component already exists in WorldAPIs()")
             global.api[string.lower(sName)] = Component
-            _tWorldAPIs[string.lower(sName)] = Component
+            self._tWorldAPIs[string.lower(sName)] = Component
         end
     end
 
     -- Expose our custom API as well
     global.api.acsecustomcomponentmanager  = self
-    _tWorldAPIs.acsecustomcomponentmanager = self
+    self._tWorldAPIs.acsecustomcomponentmanager = self
 end
 
 ACSEComponentManager.Shutdown = function(self)
     global.api.debug.Trace("ACSEComponentManager:Shutdown()")
 
-    -- component manager shutdown
-    for sName, Component in pairs(self.Components) do
-        Component:Shutdown()
-    end
-
     -- original component shutdown
     self.worldserialisation:UnregisterWorldSerialisationClient("StandaloneScenerySerialisation")
     self.tEntities = {}
+
+    -- component manager shutdown
+    for sName, Component in pairs(self.Components) do
+        Component:Shutdown()
+        global.api[string.lower(sName)] = nil
+        self._tWorldAPIs[string.lower(sName)] = nil
+    end
+    self.Components = {}
+
+    global.api.acsecustomcomponentmanager  = nil
+    self._tWorldAPIs.acsecustomcomponentmanager = nil
+
 end
 
 ACSEComponentManager.AddComponentsToEntities = function(self, _tArrayOfEntityIDAndParams, uToken)
@@ -212,12 +234,11 @@ ACSEComponentManager.AddComponentsToEntities = function(self, _tArrayOfEntityIDA
         end
     end
 
-
     return true
 end
 
 ACSEComponentManager.RemoveComponentFromEntities = function(self, _tEntitiesArray)
-    -- global.api.debug.Trace("ACSEComponentManager:RemoveComponentFromEntities()")
+    --global.api.debug.Trace("ACSEComponentManager:RemoveComponentFromEntities()")
 
     -- Component manager remove from entities, this will only get called when the actual standalonesceneryserialisation
     -- component is removed from an entity, and in our case this only happens when the entity is destroyed, therefore
@@ -235,7 +256,7 @@ end
 --
 -- @brief: special function to remove only custom components
 ACSEComponentManager.RemoveCustomComponentsFromEntity = function(self, _nEntityID, _tComponents, uToken)
-    -- global.api.debug.Trace("ACSEComponentManager:RemoveCustomComponentsFromEntity()")
+    --global.api.debug.Trace("ACSEComponentManager:RemoveCustomComponentsFromEntity()")
 
     for _, nComponentID in ipairs(_tComponents) do
         for sName, Component in pairs(self.Components) do
@@ -261,6 +282,7 @@ ACSEComponentManager.Advance = function(self, _nDeltaTime, _nUnscaledDeltaTime)
 end
 
 ACSEComponentManager.WorldSerialisationClient_Save = function(self, _tSave)
+    --global.api.debug.Trace("ACSEComponentManager:WorldSerialisationClient_Load()")
     -- Original component
     local transformAPI = self.transformAPI
     local worldserialisation = self.worldserialisation
@@ -268,6 +290,7 @@ ACSEComponentManager.WorldSerialisationClient_Save = function(self, _tSave)
     for entityID, tEntityData in table.orderedpairs(self.tEntities) do
         local serialisedEntityID = self.worldserialisation:SaveEntityID(entityID)
         local parentEntityID = transformAPI:GetParent(entityID)
+        local serialisedParentEntityID = nil
         if parentEntityID then
             local serialisedParentEntityID = self.worldserialisation:SaveEntityID(parentEntityID)
         end
@@ -284,6 +307,7 @@ ACSEComponentManager.WorldSerialisationClient_Save = function(self, _tSave)
 end
 
 ACSEComponentManager.WorldSerialisationClient_Load = function(self, _tLoad, _nLoadedVersion)
+    --global.api.debug.Trace("ACSEComponentManager:WorldSerialisationClient_Load()")
     -- Original component
     local worldserialisation = self.worldserialisation
     api.debug.Assert(self.loadCompletionToken == nil, "Completion token is nil")
@@ -292,6 +316,7 @@ ACSEComponentManager.WorldSerialisationClient_Load = function(self, _tLoad, _nLo
     for i = 1, #tEntities do
         local tLoadData = tEntities[i]
         local entityID = worldserialisation:LoadEntityID(tLoadData.entity)
+        local parentEntityID = nil
         if tLoadData.parent then
             local parentEntityID = worldserialisation:LoadEntityID(tLoadData.parent)
         end
@@ -313,6 +338,7 @@ end
 -- Required for Planet Zoo, expects this component to have this API defined
 --
 ACSEComponentManager.CompleteWorldSerialisationLoad = function(self)
+    --global.api.debug.Trace("ACSEComponentManager:CompleteWorldSerialisationLoad()")
     -- Original component
     local ret = self.loadCompletionToken
     self.loadCompletionToken = nil

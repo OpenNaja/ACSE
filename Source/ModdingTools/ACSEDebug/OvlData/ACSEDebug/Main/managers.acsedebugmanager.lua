@@ -182,8 +182,8 @@ ACSEDebugManager.Init = function(self, _tProperties, _tEnvironment)
     --/
     --/ Add Control Settings
     --/
-    local fnGetItems = function(tMenuItems)
-        self:GetMenuItems(tMenuItems)
+    local fnGetItems = function(tMenuItems, _sDeviceName)
+        self:GetMenuItems(tMenuItems, _sDeviceName)
     end
     local fnHandleEvent = function(_sID, _arg, bHandled, bRefresh, rebindFunction, unbindFunction)
         if _sID == 'keyboardsettings:acsedebug:toggleconsole' then
@@ -202,10 +202,13 @@ ACSEDebugManager.Init = function(self, _tProperties, _tEnvironment)
 end
 
 
-ACSEDebugManager.GetMenuItems = function(self, tMenuItems)
+ACSEDebugManager.GetMenuItems = function(self, tMenuItems, _sDeviceName)
     api.debug.Trace("ACSEDebugManager.GetMenuItems()")
 
-    -- We provide both menues now, for JWE1/2 or PZ
+    --
+    -- We provide menues for JWE1, JWE2 and PZ
+    --
+    
     if api.game.GetGameName() == "Planet Zoo" then
 
         local tItem = {
@@ -242,10 +245,10 @@ ACSEDebugManager.GetMenuItems = function(self, tMenuItems)
             ["open"] = false
         }
         table.insert(tMenuItems, 4, tItem)
+    end
 
-    else -- JWE1/2
+    if api.game.GetGameName() == 'Jurassic World Evolution 2' then
         local tItem = {
-            ["index"] = 1,
             ["label"] = "[STRING_LITERAL:Value=\'Debug\']",
             ["id"] = "keyboardsettings_debug",
             ["itemRendererClass"] = 4                
@@ -253,13 +256,31 @@ ACSEDebugManager.GetMenuItems = function(self, tMenuItems)
         table.insert(tMenuItems, 1, tItem)
 
         local tItem = {
-            ['index'] = 2,
             ["label"] = "[STRING_LITERAL:Value=\'Toggle Console\']",
             ["valueLabel"] = "[INPUT_ICON:InputName=#LogicalButton.ACSEDebug_ToggleConsole:device=keyboard#]",
             ["tooltipDescription"] = "[STRING_LITERAL:Value=\'Toggles visibility of the debug consonle On/Off\']",
             ["tooltipTitle"] = "[STRING_LITERAL:Value=\'Toggle Console\']",
             ["id"] = "keyboardsettings:acsedebug:toggleconsole",
             ["itemRendererClass"] = 5
+        }
+        table.insert(tMenuItems, 2, tItem)
+    end
+
+    if api.game.GetGameName() == 'Jurassic World Evolution' and _sDeviceName == 'mousekeyboard' then
+        local tItem = {
+            ["label"] = "[STRING_LITERAL:Value=\'Debug\']",
+            ["id"] = "keyboardsettings_debug",
+            ["itemRendererClass"] = 5                
+        }
+        table.insert(tMenuItems, 1, tItem)
+
+        local tItem = {
+            ["label"] = "[STRING_LITERAL:Value=\'Toggle Console\']",
+            ["valueLabel"] = "[INPUT_ICON:InputName=#LogicalButton.ACSEDebug_ToggleConsole:device=keyboard#]",
+            ["tooltipDescription"] = "[STRING_LITERAL:Value=\'Toggles visibility of the debug consonle On/Off\']",
+            ["tooltipTitle"] = "[STRING_LITERAL:Value=\'Toggle Console\']",
+            ["id"] = "keyboardsettings:acsedebug:toggleconsole",
+            ["itemRendererClass"] = 6
         }
         table.insert(tMenuItems, 2, tItem)
     end

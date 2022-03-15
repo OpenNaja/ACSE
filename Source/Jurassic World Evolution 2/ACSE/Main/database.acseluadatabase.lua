@@ -21,14 +21,14 @@ global.api.debug.Trace("Database.ACSELuaDatabase.lua loaded")
 
 -- @brief ACSE table setup
 global.api.acse = {}
-global.api.acse.versionNumber = 0.642
+global.api.acse.versionNumber = 0.646
 global.api.acse.GetACSEVersionString = function()
     return global.tostring(global.api.acse.versionNumber)
 end
 
 -- @brief ACSE dev file system used by loadfile, loadmodule, importmodule functions
-global.api.acse.devpath = "dev/Lua/"
-global.api.acse.devmodule = global.loadfile("dev/Lua/init.lua")
+global.api.acse.devpath = "Dev/Lua/"
+global.api.acse.devmodule = global.loadfile("Dev/Lua/init.lua")
 
 global.api.acse.GetACSEDevPath = function()
     return global.tostring(global.api.acse.devpath)
@@ -88,23 +88,25 @@ global.api.acsedebug = {}
 -- @brief logging/tracing functions. Export Trace as a CreateFile call for Frida console hooking
 -- or can be viewed with procmon file system events
 global.api.acsedebug.Trace = function(msg)
-    global.loadfile("acse :" .. msg)
+    global.loadfile("acse :" .. global.tostring(msg))
 end
+
 global.api.acsedebug.WriteLine = function(channel, msg)
     local tChannel = {"output", "error", "unknown"}
-    global.api.debug.Trace(msg)
+    global.api.debug.Trace(global.tostring(msg))
 end
 global.api.acsedebug.Print = function(msg, color)
-    global.api.debug.Trace(msg)
+    global.api.debug.Trace(global.tostring(msg))
 end
 global.api.acsedebug.Error = function(msg)
-    global.api.debug.Trace("-Err- " .. msg)
+    global.api.debug.Trace("-Err- " .. global.tostring(msg))
 end
 global.api.acsedebug.Warning = function(msg)
-    global.api.debug.Trace("-Wrn- " .. msg)
+    global.api.debug.Trace("-Wrn- " .. global.tostring(msg))
 end
+
 global.api.acsedebug.Assert = function(cond, msg)
-    if cond == false then
+    if global.type(cond) == 'bool' and cond == false then
         global.api.debug.Trace("-Assert- " .. global.tostring(msg))
     end
     return cond
@@ -114,6 +116,7 @@ end
 global.api.acsedebug.tTweakables = {}
 
 global.api.acsedebug.GetTweakables = function()
+    --api.debug.Trace("GetTweakables")
     return global.api.acsedebug.tTweakables
 end
 
@@ -121,6 +124,7 @@ end
 global.api.acsedebug.CreateDebugTweakable = function(ttype, id, arg1, arg2, arg3, arg4)
     --/ Tweakable types: 22 boolean, 11 float, 8 integer64, 7 integer32
     --/ tweakable exists, return the original one
+    --api.debug.Trace("CreateDebugTweakable")
 
     local nid = global.string.lower(id)
 
@@ -152,6 +156,8 @@ end
 
 --/@brief retrieve a tweakable object from the list if exists.
 global.api.acsedebug.GetDebugTweakable = function(id)
+    --api.debug.Trace("GetDebugTweakable")
+
     local nid = global.string.lower(id)
 
     if global.api.acsedebug.tTweakables[nid] then
@@ -177,6 +183,8 @@ end
 -- @splits a string by spaces, respecting quoted strings
 function stringSplit(text)
     local tout = {}
+    if text == nil then return tout end
+    
     local e = 0
     while true do
         local b = e + 1
@@ -216,6 +224,7 @@ end
 
 -- @brief adds a command to the list
 global.api.acsedebug.RegisterShellCommand = function(_fn, sCmd, sDesc)
+    --api.debug.Trace("RegisterShellCommand")
     --/ Save the short command version
     local shortcut = getCommandShortName(sCmd)
 
@@ -239,6 +248,7 @@ end
 
 -- @brief Removes a command from the list
 global.api.acsedebug.UnregisterShellCommand = function(tCmd)
+    --api.debug.Trace("UndergisterShellCommand")
     name = stringSplit(tCmd._sCmd)[1]
     name = global.string.lower(name)
     global.api.acsedebug.tShellCommands[name] = nil
@@ -247,6 +257,7 @@ end
 
 -- @brief Runs a command
 global.api.acsedebug.RunShellCommand = function(sCmd)
+    --api.debug.Trace("cmd: " .. global.tostring(_sCmd))
     -- this RunShellCommand will fail until we handle missing argument types (vector:3 etc..)
     tArgs = stringSplit(sCmd)
     name = tArgs[1]
@@ -283,7 +294,7 @@ global.api.acsedebug.RunShellCommand = function(sCmd)
                 -- also missing optional args []
                 local stringtoboolean = {["true"] = true, ["false"] = false}
                 if global.string.match(tCArgs[i], "{bool}") then
-                    tArgs[i] = stringtoboolean[tArgs[i]]
+                    tArgs[i] = stringtoboolean[tArgs[i] ]
                 end
             end
         end
@@ -344,6 +355,9 @@ global.api.acseentity.rawCreateEntity = global.api.entity.CreateEntity
 
 global.api.acseentity.FindPrefab = function(sPrefab)
     local tPrefab = global.api.acseentity.rawFindPrefab(sPrefab)
+    global.api.debug.Trace(
+        "Entity.FindPrefab()  with name: " .. global.tostring(sPrefab) .. " returned: " .. global.type(tPrefab)
+    )
     -- Return recursive changes to Components StandaloneScenerySerialization
     return tPrefab
 end
@@ -488,7 +502,6 @@ end
 global.api.acseentity.RemoveComponentsFromEntity = function(nEntityId, tComponents, uToken)
     --global.api.debug.Trace("ComponentManager:RemoveComponentsFromEntity()")
     --global.api.debug.Trace("Entities array: " .. table.tostring(tComponents, nil, nil, nil, true))
-
     -- We are getting an array of IDs of components to remove, but we can't propagate these IDs to 
     -- out custom component manager because they can't have any data attached. 
 

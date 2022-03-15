@@ -25,6 +25,9 @@ ACSEDebug.tManagers = {
     },
     [sParkEnvironment] = {
         ["Managers.ACSEDebugManager"] = {}
+    },
+    ["Environments.ModelViewerEnvironment"] = {
+        ["Managers.ACSEDebugManager"] = {}
     }
 }
 

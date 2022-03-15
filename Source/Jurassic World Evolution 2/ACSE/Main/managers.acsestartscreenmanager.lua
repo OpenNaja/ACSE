@@ -17,7 +17,7 @@ local ACSEStartScreenManager= module(..., Mutators.Manager())
 
 -- @Brief Init function for this manager
 ACSEStartScreenManager.Init = function(self, _tProperties, _tEnvironment)
-	api.debug.Trace("ACSEStartScreenManager:Init()")
+    api.debug.Trace("ACSEStartScreenManager:Init()")
 end
 
 -- @Brief Activate function for this manager
@@ -38,11 +38,11 @@ ACSEStartScreenManager.Advance = function(self, _nDeltaTime)
         end
     end
 
-	--// Advance our custom component manager
+    --// Advance our custom component manager
     local tWorldAPIs = api.world.GetWorldAPIs()
-	if tWorldAPIs.acsecustomcomponentmanager then
-		tWorldAPIs.acsecustomcomponentmanager:Advance(_nDeltaTime, _nUnscaledDeltaTime)
-	end
+    if tWorldAPIs.acsecustomcomponentmanager then
+        tWorldAPIs.acsecustomcomponentmanager:Advance(_nDeltaTime, _nUnscaledDeltaTime)
+    end
 
 end
 
@@ -52,7 +52,7 @@ end
 
 -- @Brief Shutdown function for this manager
 ACSEStartScreenManager.Shutdown = function(self)
-	api.debug.Trace("ACSEStartScreenManager:Shutdown()")
+    api.debug.Trace("ACSEStartScreenManager:Shutdown()")
 end
 
 -- @Brief Display ACSE is enabled in the frontend version string
@@ -73,4 +73,3 @@ end
 
 --/ Validate class methods and interfaces
 (Mutators.VerifyManagerModule)(ACSEStartScreenManager)
-

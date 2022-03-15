@@ -131,8 +131,6 @@ ACSE.Init = function()
 
     global.api.debug.Trace("ACSE:Init() running in " .. global.tostring(global.api.game.GetGameName()))
 
-    ACSE.tParkEnvironmentProtos = {SearchPaths = {}, Managers = {}}
-    ACSE.tStartEnvironmentProtos = {SearchPaths = {}, Managers = {}}
     ACSE.tEnvironmentProtos = {}
     ACSE.tLuaPrefabs = {}
     ACSE.tLuaPrefabNames = {}
@@ -446,6 +444,71 @@ ACSE.Init = function()
         ),
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
+              if tArgs and tArgs[2] then
+                return false, "Unexpected number of arguments.\n"
+              end
+
+              -- List worlds if missing args
+              if not tArgs or not tArgs[1] then
+                local sResponse = "Available Worlds:"
+                for _,sWorldName in global.ipairs( global.api.world.GetValidWorldNames("") ) do
+                  sResponse = sResponse .. "\n" .. sWorldName
+                end
+                return false, sResponse
+              end
+
+              local sQuery = tArgs[1]
+              local sQueryLower = sQuery:lower()
+              local tMatchingNames = global.api.world.GetValidWorldNames(sQueryLower)
+              if #tMatchingNames == 0 then
+                return false, "\'" .. sQuery .. "\' is not a valid world name, and no match found.\n"
+              end
+
+              local sFoundName = nil
+              if #tMatchingNames > 0 then
+                local sResponse = "Multiple matches for query found:"
+                for _,sWorldName in global.ipairs(tMatchingNames) do
+                  if sQueryLower == sWorldName:lower() then
+                    sFoundName = sWorldName
+                    break
+                  end
+                  sResponse = sResponse .. "\n" .. sWorldName
+                end
+
+                if not sFoundName then
+                    return false, sResponse .. "\n"
+                end
+                if not sFoundName then
+                    sFoundName = tMatchingNames[1]
+                end
+                local sResponse = "Matched world name \'" .. sFoundName .. "\'."
+                if sFoundName:lower() == sQueryLower then
+                  sResponse = "Loading level " .. sFoundName .. "."
+                end
+                global.api.game.RequestTransition(sFoundName)
+                return true, sResponse .. "\n"
+              end
+            end,
+            "&Load&Level [{level}]", "Load the given level.\n"
+        ),
+        api.debug.RegisterShellCommand(
+            function(tEnv, tArgs)
+              local sWorldName = api.world.GetCurrent()
+              local sResponse = "Reloading level " .. sWorldName .. ".\n"
+              global.api.game.RequestTransition(sWorldName)
+              return true, sResponse
+            end,
+            "&Reload&Level", "Reload the current level.\n"
+        ),
+        api.debug.RegisterShellCommand(
+            function(tEnv, tArgs)
+              global.api.game.RequestReturnToStart()
+              return true, "Returning to front end.\n"
+            end,
+            "&Quit&Level", "Exit the current game world.\n"
+        ),
+        api.debug.RegisterShellCommand(
+            function(tEnv, tArgs)
                 global.api.game.Quit(tArgs[1] or false)
             end,
             "&Quit [{bool}]",
@@ -494,9 +557,8 @@ ACSE.Init = function()
                     local allModulesList = (table.concat)(tFilteredLoadedModuleNames, "\n")
                     return false, "Found " ..
                         global.tostring(nFoundModulesCount) ..
-                            ' loaded modules matching the pattern "' ..
-                                sModuleNamePattern ..
-                                    '". You need to be more specific. \nPossible modules:\n' .. allModulesList
+                            ' loaded modules matching the pattern "' .. sModuleNamePattern ..
+                            '". You need to be more specific. \nPossible modules:\n' .. allModulesList
                 end
 
                 local sModuleName = tFilteredLoadedModuleNames[1]
@@ -584,6 +646,7 @@ ACSE.Init = function()
             "Removes a Lua module to the Lua sandbox (do not specify .lua extension).\n"
         )
     }
+    api.debug.Trace("Finished creating custom shell commands")
 
     --/ Request Starting Screen Managers from other mods
     Main.CallOnContent(
@@ -674,6 +737,7 @@ ACSE.Init = function()
             end
         end
     )
+    api.debug.Trace("Finished collecting other mods bootstrap")
 
     --/
     --/ Modify the environment files, it'd need a better way to handle this, this is 
@@ -733,6 +797,7 @@ ACSE.Init = function()
     for _, tParams in global.ipairs(ACSE.tEnvironmentProtos) do
         addManagersToEnvironment(tParams.sName, tParams.tData)
     end
+    api.debug.Trace("Finished patching Environments")
 
     --/
     --/ Hook into the main game settings controller
@@ -767,6 +832,7 @@ ACSE.Init = function()
         -- This code is used to send the game settings item list to mods
         tMod.ACSEHandleEvent = tMod.HandleEvent
         tMod.HandleEvent = function(self, _sID, _arg)
+            api.debug.Trace("GameSettings:HandleEvent()")
             local bHandled, bNeedsRefresh = self:ACSEHandleEvent(_sID, _arg)
             for _, handler in ipairs(global.api.acse._tGameSettingsRegistrations) do
                 if handler.fHandleEvent then
@@ -794,9 +860,10 @@ ACSE.Init = function()
     --/ We move the resource to the preload table, so Lua wont need to load it again and
     --/ will return our changes
     global.package.preload[modname] = tMod
+    api.debug.Trace("Finished patching " .. modname)
 
 
-
+--[[ Disabled due to crash with -nointro command line argument
     --/
     --/ Hook into the sandbox game settings controller
     --/
@@ -830,6 +897,7 @@ ACSE.Init = function()
         -- This code is used to send the game settings item list to mods
         tMod.ACSEHandleEvent = tMod.HandleEvent
         tMod.HandleEvent = function(self, _sID, _arg)
+            api.debug.Trace("SandboxSettings:HandleEvent()")
             local bHandled, bNeedsRefresh = self:ACSEHandleEvent(_sID, _arg)
             for _, handler in ipairs(global.api.acse._tSandboxSettingsRegistrations) do
                 if handler.fHandleEvent then
@@ -857,7 +925,8 @@ ACSE.Init = function()
     --/ We move the resource to the preload table, so Lua wont need to load it again and
     --/ will return our changes
     global.package.preload[modname] = tMod
-
+    api.debug.Trace("Finished patching " .. modname)
+    ]]
 
     --/
     --/ Hook into the keyboard controls settings controller
@@ -892,6 +961,7 @@ ACSE.Init = function()
         -- This code is used to send the game settings item list to mods
         tMod.ACSEHandleEvent = tMod.HandleEvent
         tMod.HandleEvent = function(self, _sID, _arg)
+            api.debug.Trace("KeyboardSettings:HandleEvent()")
             local bHandled, bNeedsRefresh = self:ACSEHandleEvent(_sID, _arg)
 
             local fRebind = function(sControlName) 
@@ -949,6 +1019,36 @@ ACSE.Init = function()
     --/ We move the resource to the preload table, so Lua wont need to load it again and
     --/ will return our changes
     global.package.preload[modname] = tMod
+    api.debug.Trace("Finished patching " .. modname)
+
+    --/
+    --/ PZ Specific patch.. debug changes prevent career mode to populate saves list
+    --/ There is no workaround, the problem comes from the game not liking the metatable
+    --/ change.
+    if api.game.GetGameName() == "Planet Zoo" then
+        modname = "windows.settingsmenu"
+        global.require(modname)
+
+        --/ Required module will be in the package loaded table.
+        local tMod = global.package.preload[modname] or global.package.loaded[modname]
+        global.api.debug.Assert(tMod ~= nil, "Can't find " .. modname .. " resource")
+
+        if not tMod.ACSEPopulateSaveMenu then
+            tMod.ACSEPopulateSaveMenu = tMod.PopulateSaveMenu
+            tMod.PopulateSaveMenu = function(self)
+                -- Temporarily disable the debug handling
+                api.debug = global.getmetatable(api.debug).__index
+                self:ACSEPopulateSaveMenu()
+                api.debug = global.setmetatable(api.acsedebug, {__index = global.api.debug})
+            end
+        end
+
+        --/ We move the resource to the preload table, so Lua wont need to load it again and
+        --/ will return our changes
+        global.package.preload[modname] = tMod
+        api.debug.Trace("Finished patching " .. modname)
+    end
+
 
 
 end
@@ -1019,6 +1119,9 @@ ACSE.tManagers = {
         ["Managers.ACSEStartScreenManager"] = {},
     },
     [sParkEnvironment] = {
+        ["Managers.ACSEParkManager"] = {}
+    },
+    ["Environments.ModelViewerEnvironment"] = {
         ["Managers.ACSEParkManager"] = {}
     }
 }
