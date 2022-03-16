@@ -1109,22 +1109,28 @@ end
 
 -- List of custom managers to force injection on a park, because ACSE source
 -- works for both PZ and JWE we need to identify the current game to fill the 
--- right table
-local sParkEnvironment = "Environments.ParkEnvironment"
-if api.game.GetGameName() == "Planet Zoo" then
-    sParkEnvironment = "Environments.DarwinEnvironment"
-end
+-- table with the right environments
 ACSE.tManagers = {
     ["Environments.StartScreenEnvironment"] = {
         ["Managers.ACSEStartScreenManager"] = {},
     },
-    [sParkEnvironment] = {
-        ["Managers.ACSEParkManager"] = {}
-    },
-    ["Environments.ModelViewerEnvironment"] = {
+}
+
+if api.game.GetGameName() == "Planet Zoo" then
+    ACSE.tManagers["Environments.DarwinEnvironment"] = {
+            ["Managers.ACSEParkManager"] = {}
+    }
+end
+
+if api.game.GetGameName() == "Jurassic World Evolution 2" then
+    ACSE.tManagers["Environments.ParkEnvironment"] = {
         ["Managers.ACSEParkManager"] = {}
     }
-}
+    ACSE.tManagers["Environments.ModelViewerEnvironment"] = {
+        ["Managers.ACSEParkManager"] = {}
+    }
+end
+
 
 -- @brief Add our custom Manager to the different environments
 ACSE.AddManagers = function(_fnAdd)
