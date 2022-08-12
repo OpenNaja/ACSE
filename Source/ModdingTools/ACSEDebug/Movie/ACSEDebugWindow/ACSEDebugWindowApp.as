@@ -7,6 +7,7 @@
   import flash.desktop.Clipboard;
   import flash.desktop.ClipboardFormats;
   import flash.desktop.ClipboardTransferMode;
+  import flash.events.MouseEvent; 
 
 
   public class ACSEDebugWindowApp extends UIApplication {
@@ -38,8 +39,19 @@
 
       logBox.appendText("ACSEDebugWindow.init()\n");
       cmdInput.appendText("Enter command");
-
+	  logBox.addEventListener(MouseEvent.MOUSE_DOWN, mouseDownScroll);
+	  logBox.addEventListener(MouseEvent.MOUSE_UP, mouseUpScroll);
+	  
     }
+	
+	public function mouseDownScroll(event:MouseEvent):void 
+    { 
+       logBox.scrollV++; 
+	}
+	public function mouseUpScroll(event:MouseEvent):void 
+    { 
+       logBox.scrollV--; 
+	}
 
     private function show(): void {
       this.mylayer.visible = true;

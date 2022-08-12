@@ -29,6 +29,12 @@ if api.game.GetGameName() == "Planet Zoo" then
     }
 end
 
+if api.game.GetGameName() == "Jurassic World Evolution" then
+    ACSEDebug.tManagers["Environments.ParkEnvironment"] = {
+        ["Managers.ACSEDebugManager"] = {}
+    }
+end
+
 if api.game.GetGameName() == "Jurassic World Evolution 2" then
     ACSEDebug.tManagers["Environments.ParkEnvironment"] = {
         ["Managers.ACSEDebugManager"] = {}

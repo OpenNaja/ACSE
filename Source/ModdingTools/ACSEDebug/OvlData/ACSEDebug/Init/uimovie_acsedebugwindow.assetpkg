@@ -1,1 +1,3 @@
-ovldata\ACSEDebug\UI\UIMovie_AcseDebugWindow
+<AssetpkgRoot zero="0" game="Games.JURASSIC_WORLD_EVOLUTION_2">
+	<asset_path pool_type="2">ovldata\ACSEDebug\UI\UIMovie_AcseDebugWindow</asset_path>
+</AssetpkgRoot>

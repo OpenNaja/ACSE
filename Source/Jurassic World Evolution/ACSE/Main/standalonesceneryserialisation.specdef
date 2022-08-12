@@ -1,0 +1,19 @@
+<SpecdefRoot attrib_count="0" flags="1" name_count="0" childspec_count="0" manager_count="0" script_count="0" game="Games.JURASSIC_WORLD_EVOLUTION_2">
+	<attrib_dtypes pool_type="2" />
+	<attrib_names pool_type="2">
+		<ptrs />
+	</attrib_names>
+	<attrib_datas pool_type="2" />
+	<names pool_type="3">
+		<ptrs />
+	</names>
+	<childspecs pool_type="3">
+		<ptrs />
+	</childspecs>
+	<managers pool_type="3">
+		<ptrs />
+	</managers>
+	<scripts pool_type="3">
+		<ptrs />
+	</scripts>
+</SpecdefRoot>

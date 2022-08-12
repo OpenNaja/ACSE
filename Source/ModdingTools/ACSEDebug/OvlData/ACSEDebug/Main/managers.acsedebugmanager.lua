@@ -20,7 +20,7 @@ local next = next
 local Trace = global.api.debug.Trace
 local Mutators = require("Environment.ModuleMutators")
 
-local ACSEDebugManager = module(..., (Mutators.Manager)("Interfaces.IACSEDebugManager"))
+local ACSEDebugManager = module(..., Mutators.Manager("Interfaces.IACSEDebugManager"))
 
 -- We temporarily hook into the Trace function..
 ACSEDebugManager.oldTrace = global.api.debug.Trace
@@ -76,13 +76,14 @@ ACSEDebugManager.tTextKeys = {
 
 -- @brief defines the control contexts, and loads the debug UI
 ACSEDebugManager.Init = function(self, _tProperties, _tEnvironment)
-    Trace("ACSEDebugManager.Init()")
+    Trace("ACSEDebugManager.Init()t")
     self._tCommandHistoryIndex = 1
 
     self.bTraceEnabled = true -- we start enabled by default
     self.bClearOnAdvance = false
 
     self.iUIManager = global.api.game.GetEnvironment():RequireInterface("Interfaces.IUIManager")
+    Trace("ACSEDebugManager.Init() trying to load movie")
     self.uiMovie = self.iUIManager:GetGUIWrapper(self._NAME, "ACSEDebugWindow")
     self.uiMovie:Load()
     self.uiMovie:Hide()
@@ -97,6 +98,7 @@ ACSEDebugManager.Init = function(self, _tProperties, _tEnvironment)
         end
     end
     global.api.debug.Trace = dTrace
+    Trace("ACSEDebugManager.Init() redirected trace output")
 
     self.tInput = {}
     self.tInput.keys = ACSEDebugManager.tUIKeys
@@ -107,6 +109,7 @@ ACSEDebugManager.Init = function(self, _tProperties, _tEnvironment)
         v.o = self.tInput.oControlContext:GetButton(tostring(k))
     end
     self.tInput.oControlContext:Register()
+    Trace("ACSEDebugManager.Init() registered player control")
 
     -- Build the rest of keyboard control keys, tInput.textkeys already has the default/odd ones
     --
@@ -127,6 +130,7 @@ ACSEDebugManager.Init = function(self, _tProperties, _tEnvironment)
     for k, v in pairs(self.tInput.textkeys) do
         v.o = self.tInput.oKeybdControlContext:GetButton(tostring(k))
     end
+    Trace("ACSEDebugManager.Init() created control buttons")
 
     -- Register our own custom shell commands
     self.tShellCommands = {
@@ -178,6 +182,7 @@ ACSEDebugManager.Init = function(self, _tProperties, _tEnvironment)
 		]]
 
     }
+    Trace("ACSEDebugManager.Init() Added custom commands")
 
     --/
     --/ Add Control Settings
@@ -198,6 +203,7 @@ ACSEDebugManager.Init = function(self, _tProperties, _tEnvironment)
     end
     -- Register our custom control settings
     self.ControlsSettingsHandler = global.api.acse.RegisterControlsSettingsHandler(fnGetItems, fnHandleEvent)
+    Trace("ACSEDebugManager.Init() registered control settings handler")
 
 end
 

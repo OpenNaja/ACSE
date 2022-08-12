@@ -1,5 +1,14 @@
-<LogicalControls>
-	<LogicalControl flags="0" name="ACSEDebug_ToggleConsole" type="Button">
-		<DefaultValue k1a="40" k1b="0" k2="0" k3="0" k4="0" />
-	</LogicalControl>
+<LogicalControls button_count="1" axis_count="0" count_3="0" count_4="0" flags="0" game="Games.JURASSIC_WORLD_EVOLUTION_2">
+	<buttons pool_type="2">
+		<button datas_count="1" flags="0">
+			<button_name pool_type="2">ACSEDebug_ToggleConsole</button_name>
+			<datas pool_type="2">
+				<buttondata k_1_a="40" k_1_b="0" k_2="0" k_3="0" k_4="0" />
+			</datas>
+		</button>
+	</buttons>
+	<axes pool_type="4" />
+	<c />
+	<d pool_type="4" />
+	<unsure pool_type="4">None</unsure>
 </LogicalControls>
