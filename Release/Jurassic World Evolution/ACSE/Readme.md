@@ -1,6 +1,8 @@
 # Awesome Cobra Script Extender (ACSE)
 The Awesome Cobra Script Extender (ACSE) is a tool used by many Cobra engine mods that expands scripting capabilities and adds additional functionality to the games developed by Frontier. 
 
+Note: This ACSE version is experimental and does not work with previous new species mods.
+
 This mod is not functional on its own and requires other mods to operate. 
 
 ### Disclaimer
