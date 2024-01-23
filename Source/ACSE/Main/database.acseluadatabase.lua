@@ -2,577 +2,474 @@
 --/  @file   Database.ACSELuaDatabase.lua
 --/  @author Inaki
 --/
---/  @brief  Handles ACSE loading and database creation, it also bootstraps
---/          the missing Lua debug functionality.
+--/  @brief  Creates the database prototypes for modules to hook into the
+--/          game environment or alter the current ones. It also registers
+--/          the basic shell commands for the functionality it provides.
+--/          Registers ACSE as a Lua Game Database with an interface to 
+--/          interact with it by other mods.
+--/
 --/  @see    https://github.com/OpenNaja/ACSE
 -----------------------------------------------------------------------
-local global = _G
-local api = global.api
-local pairs = global.pairs
-local ipairs = global.ipairs
-local type = global.type
-local require = require
-local table = require("Common.tableplus")
-local ACSEDatabase = module(...)
-local Vector3 = require("Vector3")
-local Vector2 = require("Vector2")
+local global          = _G
+local api             = global.api
+local tostring        = global.tostring
+local pairs           = pairs
+local type            = type
+local ipairs          = ipairs
+local next            = global.next
+local string          = global.string
+local require         = global.require
+local table           = require("Common.tableplus")
+local StringUtils     = require("Common.stringUtils")
+local Main            = require("Database.Main")
 
-global.api.debug.Trace("Database.ACSELuaDatabase.lua loaded")
+local GameDatabase    = require("Database.GameDatabase")
 
--- @brief ACSE table setup
-global.api.acse = {}
-global.api.acse.versionNumber = 0.644
-global.api.acse.GetACSEVersionString = function()
-    return global.tostring(global.api.acse.versionNumber)
+local ACSELuaDatabase = module(...)
+
+-- Insert ourselves in the Database loading process
+ACSELuaDatabase.AddContentToCall = function(_tContentToCall)
+    table.insert(_tContentToCall, ACSELuaDatabase)
 end
 
--- @brief ACSE dev file system used by loadfile, loadmodule, importmodule functions
-global.api.acse.devpath = "dev/Lua/"
-global.api.acse.devmodule = global.loadfile("dev/Lua/init.lua")
+-- List of lua Components to populate from other mods
+api.acse.tLuaComponents = {}
 
-global.api.acse.GetACSEDevPath = function()
-    return global.tostring(global.api.acse.devpath)
-end
-global.api.acse.SetACSEDevPath = function(_sPath)
-    global.api.acse.devpath = _sPath
-end
+-- List of lua Prefabs to populate from other mods
+api.acse.tLuaPrefabs = {}
+api.acse.tLuaPrefabNames= {}
 
--- @brief allow registration of gameplay settings handlers
-global.api.acse._tGameSettingsRegistrations = {}
-global.api.acse.RegisterGameSettingsHandler = function( fGetItems, fHandleEvent, fApplyChanges)
-    local tItem = {
-        fGetItems     = fGetItems,
-        fHandleEvent  = fHandleEvent,
-        fApplyChanges = fApplyChanges,
-    }
-    table.append(global.api.acse._tGameSettingsRegistrations, tItem)
-    return #global.api.acse._tGameSettingsRegistrations
-end
-global.api.acse.UnregisterGameSettingsHandler = function(nItem)
-    table.remove(global.api.acse._tGameSettingsRegistrations, nItem)
-end
-
--- @brief allow registration of sandbox settings handlers
-global.api.acse._tSandboxSettingsRegistrations = {}
-global.api.acse.RegisterSandboxSettingsHandler = function( fGetItems, fHandleEvent, fApplyChanges)
-    local tItem = {
-        fGetItems     = fGetItems,
-        fHandleEvent  = fHandleEvent,
-        fApplyChanges = fApplyChanges,
-    }
-    table.append(global.api.acse._tSandboxSettingsRegistrations, tItem)
-    return #global.api.acse._tSandboxSettingsRegistrations
-end
-global.api.acse.UnregisterSandboxSettingsHandler = function(nItem)
-    table.remove(global.api.acse._tSandboxSettingsRegistrations, nItem)
-end
-
--- @brief allow registration of keyboard control settings handlers
-global.api.acse._tControlsSettingsRegistrations = {}
-global.api.acse.RegisterControlsSettingsHandler = function( fGetItems, fHandleEvent, fApplyChanges)
-    local tItem = {
-        fGetItems     = fGetItems,
-        fHandleEvent  = fHandleEvent,
-        fApplyChanges = fApplyChanges,
-    }
-    table.append(global.api.acse._tControlsSettingsRegistrations, tItem)
-    return #global.api.acse._tControlsSettingsRegistrations
-end
-global.api.acse.UnregisterControlsSettingsHandler = function(nItem)
-    table.remove(global.api.acse._tControlsSettingsRegistrations, nItem)
-end
-
--- @brief setup a custom debug/trace system to use
-global.api.acsedebug = {}
-
--- @brief logging/tracing functions. Export Trace as a CreateFile call for Frida console hooking
--- or can be viewed with procmon file system events
-global.api.acsedebug.Trace = function(msg)
-    global.loadfile("acse :" .. global.tostring(msg))
-end
-
-global.api.acsedebug.WriteLine = function(channel, msg)
-    local tChannel = {"output", "error", "unknown"}
-    global.api.debug.Trace(global.tostring(msg))
-end
-global.api.acsedebug.Print = function(msg, color)
-    global.api.debug.Trace(global.tostring(msg))
-end
-global.api.acsedebug.Error = function(msg)
-    global.api.debug.Trace("-Err- " .. global.tostring(msg))
-end
-global.api.acsedebug.Warning = function(msg)
-    global.api.debug.Trace("-Wrn- " .. global.tostring(msg))
-end
-
-global.api.acsedebug.Assert = function(cond, msg)
-    if global.type(cond) == 'bool' and cond == false then
-        global.api.debug.Trace("-Assert- " .. global.tostring(msg))
-    end
-    return cond
-end
-
--- Tweakable support
-global.api.acsedebug.tTweakables = {}
-
-global.api.acsedebug.GetTweakables = function()
-    --api.debug.Trace("GetTweakables")
-    return global.api.acsedebug.tTweakables
-end
-
---/@brief make our own tweakables manager
-global.api.acsedebug.CreateDebugTweakable = function(ttype, id, arg1, arg2, arg3, arg4)
-    --/ Tweakable types: 22 boolean, 11 float, 8 integer64, 7 integer32
-    --/ tweakable exists, return the original one
-    --api.debug.Trace("CreateDebugTweakable")
-
-    local nid = global.string.lower(id)
-
-    if global.api.acsedebug.tTweakables[nid] then
-        return global.api.acsedebug.tTweakables[nid]
-    end
-
-    --/ make a new tweakable
-    local tweakable = {}
-    tweakable.index = {}
-    tweakable.metatable = {__index = tweakable.index}
-    tweakable.id = id
-    tweakable.type = ttype
-    tweakable.value = arg1
-    tweakable.min = arg2
-    tweakable.max = arg3
-    tweakable.step = arg4
-    tweakable.GetValue = function(self)
-        return self.value
-    end
-    tweakable.SetValue = function(self, newValue)
-        self.value = newValue
-    end
-
-    --/ save the tweakable
-    global.api.acsedebug.tTweakables[nid] = tweakable
-    return tweakable
-end
-
---/@brief retrieve a tweakable object from the list if exists.
-global.api.acsedebug.GetDebugTweakable = function(id)
-    --api.debug.Trace("GetDebugTweakable")
-
-    local nid = global.string.lower(id)
-
-    if global.api.acsedebug.tTweakables[nid] then
-        return global.api.acsedebug.tTweakables[nid]
-    end
-
-    return nil
-end
-
--- // Shell commands support
-global.api.acsedebug.tShellCommands = {}
-global.api.acsedebug.tShellCommandsShort = {}
-
--- @brief splits a string by ' ' character
-function Split(s, delimiter)
-    result = {}
-    for match in (s .. delimiter):gmatch("(.-)" .. delimiter) do
-        table.insert(result, match)
-    end
-    return result
-end
-
--- @splits a string by spaces, respecting quoted strings
-function stringSplit(text)
-    local tout = {}
-    local e = 0
-    while true do
-        local b = e + 1
-        b = text:find("%S", b)
-        if b == nil then
-            break
-        end
-        if text:sub(b, b) == "'" then
-            e = text:find("'", b + 1)
-            b = b + 1
-        elseif text:sub(b, b) == '"' then
-            e = text:find('"', b + 1)
-            b = b + 1
-        else
-            e = text:find("%s", b + 1)
-        end
-        if e == nil then
-            e = #text + 1
-        end
-        global.table.insert(tout, text:sub(b, e - 1))
-    end
-    return tout
-end
-
--- @brief from &Time&Of&Day command string, returns tod
-function getCommandShortName(text)
-    local tout = {}
-    for match in text:gmatch("&(.)") do
-        global.table.insert(tout, match:lower())
-    end
-    if #tout > 0 then
-        return global.table.concat(tout)
-    else
+api.acse.GetLuaPrefab = function(_sName)
+    if api.acse.tLuaPrefabNames[_sName] == nil then
         return nil
     end
+    return  api.acse.tLuaPrefabs[ api.acse.tLuaPrefabNames[_sName] ].PrefabData
 end
 
--- @brief adds a command to the list
-global.api.acsedebug.RegisterShellCommand = function(_fn, sCmd, sDesc)
-    --api.debug.Trace("RegisterShellCommand")
-    --/ Save the short command version
-    local shortcut = getCommandShortName(sCmd)
+-- List of hooks for runtime-patching
+api.acse.tLuaHooks = {}
 
-    --/ make a new command
-    local command = {}
-    command._fn = _fn
-    command._sCmd = global.string.gsub(sCmd, "&", "") -- Remove case sensitivity marker
-    command._sDesc = sDesc
+-- List of protos/managers to populate from other mods
+api.acse.tEnvironmentProtos = {}
 
-    name = stringSplit(command._sCmd)[1]
-    name = global.string.lower(name)
 
-    --/ save the command and shortcut version
-    global.api.acsedebug.tShellCommands[name] = command
-    if shortcut then
-        global.api.acsedebug.tShellCommandsShort[shortcut] = name
+-- Definition of our own database methods
+ACSELuaDatabase.tDatabaseMethods = {
+    --/ version info
+    GetACSEVersionNumer = function()
+        return api.acse.versionNumber
+    end,
+    GetACSEVersionString = function()
+        return api.acse.GetVersionString()
+    end,
+    AppendToGameVersionString = function(_sText, _sDelim)
+        if _sDelim == nil then _sDelim = "\n" end
+        table.insert(api.acse.tAppendToVersionString, {text = _sText, sep = _sDelim})
+    end,    
+    --/ Lua Components
+    GetLuaComponents = function()
+        return api.acse.tLuaComponents
+    end,
+    --/ Lua prefabs
+    --/ Todo: save compiled prefab token as the value into the prefabNames table instead of a true
+    GetLuaPrefabs = function()
+        return api.acse.tLuaPrefabs
+    end,
+    GetLuaPrefabNames = function()
+        return api.acse.tLuaPrefabNames
+    end,
+    --/ Lua prefabs
+    GetLuaPrefab = function(_sName)
+        if api.acse.tLuaPrefabNames[_sName] ~= nil then
+            global.api.debug.Warning("ACSE trying to access a missing prefab: " .. global.tostring(_sName))
+            return nil
+        end
+        return api.acse.tLuaPrefabs[ api.acse.tLuaPrefabNames[_sName] ].PrefabData
+    end,
+    --/ Lua prefabs
+    BuildLuaPrefabs = function()
+        --api.debug.Trace("Prefabs = " .. table.tostring(api.acse.tLuaPrefabs, nil, nil, nil, true))
+        local nStartTime = global.api.time.GetPerformanceTimer()
+        for _, tData in global.ipairs(api.acse.tLuaPrefabs) do
+            -- api.debug.Trace("Compiling: " .. tData.PrefabName)
+            local cPrefab = api.entity.CompilePrefab(tData.PrefabData, tData.PrefabName)
+        end
+        local nNewTime = global.api.time.GetPerformanceTimer()
+        local nDiff = global.api.time.DiffPerformanceTimers(nNewTime, nStartTime)
+        local nDiffMs = global.api.time.PerformanceTimeToMilliseconds(nDiff)
+        global.api.debug.Trace(string.format("Compiling %d Lua prefabs took %.3f seconds.", table.count(api.acse.tLuaPrefabs), (nDiffMs / 1000)))
+    end,
+    BuildLuaPrefab = function(_sName)
+        for _, tData in global.ipairs(api.acse.tLuaPrefabs) do
+            if tData.PrefabName == _sName then
+                local cPrefab = global.api.entity.CompilePrefab(tData.PrefabData, tData.PrefabName)
+                return
+            end
+        end
+        global.api.debug.Trace("ACSE trying to build a missing prefab: " .. _sName)
+    end,
+    AddLuaPrefab = function(_sName, _tParams)
+        -- api.debug.Trace("Add Lua Prefab " .. global.tostring(_sName))
+        if type(_sName) == "string" and type(_tParams) == "table" then
+            --api.debug.Assert(api.acse.tLuaPrefabNames[_sName] == nil, "Duplicated Lua Prefab " .. _sName)
+            if api.acse.tLuaPrefabNames[_sName] == nil then
+                -- Add new prefab
+                table.append(api.acse.tLuaPrefabs, {PrefabName = _sName, PrefabData = _tParams})
+                api.acse.tLuaPrefabNames[_sName] = table.count(api.acse.tLuaPrefabs)
+            else
+                -- Override existing prefab
+                local index = api.acse.tLuaPrefabNames[_sName]
+                api.acse.tLuaPrefabs[index] = {PrefabName = _sName, PrefabData = _tParams}
+            end
+        end
+    end,
+    GetLatestPrefab = function(_sName)
+        if _sName and api.acse.tLuaPrefabNames[_sName] then
+            GameDatabase.BuildLuaPrefab(_sName)
+        end
+        return api.entity.FindPrefab(_sName)
+    end,
+    --/ Lua hooks
+    GetLuaHooks = function()
+        return api.acse.tLuaHooks
+    end,
+    --/ global environment hook
+    GetEnvironmentProtos = function()
+        return api.acse.tEnvironmentProtos
+    end,
+    --/ Allow late second mods to update prefabs before they are built
+    RunPreBuildPrefabs = function()
+        Main.CallOnContent(
+            "PreBuildPrefabs",
+            function(_sName, _tParams)
+                -- api.debug.Trace("Add Lua Prefab " .. global.tostring(_sName))
+                if type(_sName) == "string" and type(_tParams) == "table" then
+                    --api.debug.Assert(api.acse.tLuaPrefabNames[_sName] == nil, "Duplicated Lua Prefab " .. _sName)
+                    if api.acse.tLuaPrefabNames[_sName] == nil then
+                        -- Add new prefab
+                        table.append(api.acse.tLuaPrefabs, {PrefabName = _sName, PrefabData = _tParams})
+                        api.acse.tLuaPrefabNames[_sName] = table.count(api.acse.tLuaPrefabs)
+                    else
+                        -- Override existing prefab
+                        local index = api.acse.tLuaPrefabNames[_sName]
+                        api.acse.tLuaPrefabs[index] = {PrefabName = _sName, PrefabData = _tParams}
+                    end
+                end
+            end,
+            api.acse.tLuaPrefabNames,
+            api.acse.tLuaPrefabs
+        )        
     end
+}
 
-    return global.api.acsedebug.tShellCommands[name]
+-- @brief adds our custom database methods to the main game database
+ACSELuaDatabase.AddDatabaseFunctions = function(_tDatabaseFunctions)
+    for sName, fnFunction in pairs(ACSELuaDatabase.tDatabaseMethods) do
+        _tDatabaseFunctions[sName] = fnFunction
+    end
 end
 
--- @brief Removes a command from the list
-global.api.acsedebug.UnregisterShellCommand = function(tCmd)
-    --api.debug.Trace("UndergisterShellCommand")
-    name = stringSplit(tCmd._sCmd)[1]
-    name = global.string.lower(name)
-    global.api.acsedebug.tShellCommands[name] = nil
-    return
-end
+-- @brief Database init
+ACSELuaDatabase.Init = function()
+    api.debug.Trace("ACSELuaDatabase:Init()")
+    api.debug.Trace("ACSE Bootstrap started")
 
--- @brief Runs a command
-global.api.acsedebug.RunShellCommand = function(sCmd)
-    --api.debug.Trace("cmd: " .. global.tostring(_sCmd))
-    -- this RunShellCommand will fail until we handle missing argument types (vector:3 etc..)
-    tArgs = stringSplit(sCmd)
-    name = tArgs[1]
-    name = global.string.lower(name)
-    global.table.remove(tArgs, 1)
+    -- Register our own custom shell commands
+    api.debug.Trace("registering custom commands")
 
-    name = global.api.acsedebug.tShellCommandsShort[name] or name
-    local cmd = global.api.acsedebug.tShellCommands[name]
+    ACSELuaDatabase.tShellCommands = {
+    }
 
-    if cmd ~= nil then
-        -- Convert Arg types
-        tCArgs = stringSplit(cmd._sCmd)
-        global.table.remove(tCArgs, 1)
+    Main.CallOnContent(
+        "AddLuaCommands",
+        function(_sName, _tParams)
+            if type(_sName) == "string" and type(_tParams) == "table" then
+                local oShellCommand = api.debug.RegisterShellCommand(_tParams[1], _sName, _tParams[2] )
+                table.insert(ACSELuaDatabase.tShellCommands, oShellCommand)
+            end
+        end
+    )
 
-        for i, v in global.pairs(tArgs) do
-            if tCArgs[i] ~= nil then
-                if global.string.match(tCArgs[i], "{string}") then
-                end -- do nothing, for SetTweakable
-                if global.string.match(tCArgs[i], "{value}") then
-                end -- do nothing, for SetTweakable
-                if global.string.match(tCArgs[i], "{float}") then
-                    tArgs[i] = global.tonumber(tArgs[i])
+    --/ Request Lua Components from other mods
+    api.debug.Trace("requesting additional components")
+    Main.CallOnContent(
+        "AddLuaComponents",
+        function(_sName, _tParams)
+            if type(_sName) == "string" and type(_tParams) == "string" then
+                --api.debug.Trace("Adding component: " .. _sName)
+                --api.debug.Assert(api.acse.tLuaComponents[_sName] == nil, "Ingoring duplicated Lua Component " .. _sName)
+                api.acse.tLuaComponents[_sName] = _tParams
+            end
+        end
+    )
+
+    --/ Request Park Managers from other mods. The new format is using the
+    --/ environment name to override and prototype table to merge
+    api.debug.Trace("requesting function hooks")
+    Main.CallOnContent(
+        "AddLuaHooks",
+        function(_sName, _tParams)
+            if type(_sName) == "string" and (type(_tParams) == "table" or type(_tParams) == 'function') then
+                table.insert(
+                    api.acse.tLuaHooks, 
+                    {   
+                        sName = _sName,
+                        tData = _tParams
+                    }
+                )
+            end
+        end
+    )
+
+    --/ Request Park Managers from other mods. The new format is using the
+    --/ environment name to override and prototype table to merge, and we will
+    --/ use a custom hook for each one them
+    api.debug.Trace("requesting managers information")
+    Main.CallOnContent(
+        "AddManagers",
+        function(_sName, _tParams)
+            if type(_sName) == "string" and type(_tParams) == "table" then
+                api.debug.Warning("Managers: " .. table.tostring(_tParams) .. " are being added using AddManagers (obsolete API). Use AddLuaManagers instead.")
+                table.insert(
+                    api.acse.tEnvironmentProtos, 
+                    {   
+                        sName = _sName,
+                        tData = _tParams
+                    }
+                )
+            end
+        end
+    )
+    Main.CallOnContent(
+        "AddLuaManagers",
+        function(_sName, _tParams)
+            if type(_sName) == "string" and type(_tParams) == "table" then
+                table.insert(
+                    api.acse.tEnvironmentProtos, 
+                    {   
+                        sName = _sName,
+                        tData = _tParams
+                    }
+                )
+            end
+        end
+    )
+
+    --/ Request Starting Screen Managers from other mods
+    Main.CallOnContent(
+        "AddStartScreenManagers",
+        function(_sName, _tParams)
+            if type(_sName) == "string" and type(_tParams) == "table" then
+                api.debug.Warning("Manager: " .. _sName .. " is being added using AddStartScreenManagers (obsolete API). Use AddLuaManagers.")
+                local tItem = {
+                    sName = "Environments.StartScreenEnvironment",
+                    tData = {
+                        [_sName] = _tParams
+                    },
+                }
+                table.insert(api.acse.tEnvironmentProtos, tItem)
+            end
+        end
+    )
+
+    --/ Request Park Managers from other mods
+    Main.CallOnContent(
+        "AddParkManagers",
+        function(_sName, _tParams)
+            if type(_sName) == "string" and type(_tParams) == "table" then
+                api.debug.Warning("Manager: " .. _sName .. " is being added using AddParkManagers (obsolete API). Use AddLuaManagers")
+
+                -- Provide support for old method of adding Park managers
+                local sParkEnvironment = "Environments.ParkEnvironment"
+                if api.game.GetGameName() == "Planet Zoo" then
+                    sParkEnvironment = "Environments.DarwinEnvironment"
                 end
-                if global.string.match(tCArgs[i], "{int32}") then
-                    tArgs[i] = global.tonumber(tArgs[i])
-                end
-                if global.string.match(tCArgs[i], "{uint32}") then
-                    tArgs[i] = global.tonumber(tArgs[i])
-                end
-                if global.string.match(tCArgs[i], "{uint64}") then
-                    tArgs[i] = global.tonumber(tArgs[i])
-                end
-                -- Missing {notificationtype} {notificationcontexttype} {vector:3} and {vector:2}
-                -- also missing optional args []
-                local stringtoboolean = {["true"] = true, ["false"] = false}
-                if global.string.match(tCArgs[i], "{bool}") then
-                    tArgs[i] = stringtoboolean[tArgs[i] ]
+
+                local tItem = {
+                    sName = sParkEnvironment,
+                    tData = {
+                        [_sName] = _tParams
+                    },
+                }
+                table.insert(api.acse.tEnvironmentProtos, tItem)
+            end
+        end
+    )
+    --/ Create hooks to handle the Manager injection
+    ACSELuaDatabase._CreateHooksForManagers()
+
+    --/ Request Lua Prefabs from other mods
+    local nStartTime = global.api.time.GetPerformanceTimer()
+    api.debug.Trace("requesting additional prefabs")
+    Main.CallOnContent(
+        "AddLuaPrefabs",
+        function(_sName, _tParams)
+            -- api.debug.Trace("Add Lua Prefab " .. global.tostring(_sName))
+            if type(_sName) == "string" and type(_tParams) == "table" then
+                --api.debug.Assert(api.acse.tLuaPrefabNames[_sName] == nil, "Duplicated Lua Prefab " .. _sName)
+                if api.acse.tLuaPrefabNames[_sName] == nil then
+                    -- Add new prefab
+                    table.append(api.acse.tLuaPrefabs, {PrefabName = _sName, PrefabData = _tParams})
+                    api.acse.tLuaPrefabNames[_sName] = table.count(api.acse.tLuaPrefabs)
+                else
+                    -- Override existing prefab
+                    local index = api.acse.tLuaPrefabNames[_sName]
+                    api.acse.tLuaPrefabs[index] = {PrefabName = _sName, PrefabData = _tParams}
                 end
             end
         end
+    )
+    local nNewTime = global.api.time.GetPerformanceTimer()
+    local nDiff = global.api.time.DiffPerformanceTimers(nNewTime, nStartTime)
+    local nDiffMs = global.api.time.PerformanceTimeToMilliseconds(nDiff)
+    api.debug.Trace(string.format("Loaded %d Lua prefabs in %.3f seconds", table.count(api.acse.tLuaPrefabNames), (nDiffMs / 1000)))
 
-        -- Some commands will try to print/dump into the environment.output stream, it just needs
-        -- to be initialised for the game not crash
-        local tEnv = api.game.GetEnvironment()
-        tEnv.output = 1
-        tEnv.error = 2
+    api.debug.Trace("Finished collecting other mods bootstrap")
+end
 
-        local bRet, sMsg = cmd._fn(api.game.GetEnvironment(), tArgs) 
-        if sMsg ~= nil then
-            global.api.debug.Trace(global.tostring(sMsg))
-        end
+ACSELuaDatabase.Setup = function()
+    api.debug.Trace("ACSELuaDatabase.Setup()")
+end
+
+
+-- @brief Environment Shutdown
+ACSELuaDatabase.Shutdown = function()
+    global.api.debug.Trace("ACSELuaDatabase:Shutdown()")
+
+    -- Remove custom commands
+    for i, oCommand in ipairs(ACSELuaDatabase.tShellCommands) do
+        api.debug.UnregisterShellCommand(oCommand)
     end
+    ACSELuaDatabase.tShellCommands = nil
+
+    -- Time call TableChecker Shutdown?
+end
+
+-- @brief Called when a Reinit is about to happen
+ACSELuaDatabase.ShutdownForReInit = function()
 end
 
 
---// 
---// Provides ACSE API component manager support
---// 
-global.api.acsecomponentmanager = {}
-global.api.acsecomponentmanager.rawLookupComponentManagerID = global.api.componentmanager.LookupComponentManagerID
-global.api.acsecomponentmanager.rawGetComponentManagerNameFromID = global.api.componentmanager.GetComponentManagerNameFromID
-
-global.api.acsecomponentmanager.LookupComponentManagerID = function(_sName)
-    local ret = api.componentmanager.rawLookupComponentManagerID(_sName)
-    if not ret then 
-        ret = global.api.acsecustomcomponentmanager:GetComponentIDFromName(_sName)
-    end
-    return ret
-end
-
-global.api.acsecomponentmanager.GetComponentManagerNameFromID = function(_nID)
-    local ret = api.componentmanager.rawGetComponentManagerNameFromID(_nID)
-    if not ret then 
-        ret = global.api.acsecustomcomponentmanager:GetComponentNameFromID(_nID)
-    end
-    return ret
-end
-
-
---// 
---// Provides ACSE API entity support
---// 
-global.api.acseentity = {}
-global.api.acseentity.tLoadedEntities = {} -- Keep track of loaded entities for their options table
-global.api.acseentity.rawFindPrefab = global.api.entity.FindPrefab
-global.api.acseentity.rawCompilePrefab = global.api.entity.CompilePrefab
-global.api.acseentity.rawInstantiatePrefab = global.api.entity.InstantiatePrefab
-global.api.acseentity.rawAddComponentsToEntity = global.api.entity.AddComponentsToEntity
-global.api.acseentity.rawRemoveComponentsFromEntity = global.api.entity.RemoveComponentsFromEntity
-global.api.acseentity.rawInstantiateDesc = global.api.entity.InstantiateDesc
-global.api.acseentity.rawCreateEntity = global.api.entity.CreateEntity
---global.api.acseentity.rawDestroyPrefab = global.api.entity.DestroyPrefab
-
---// @todo: consider adding CreateEntity and DestroyEntity hooks
-
-global.api.acseentity.FindPrefab = function(sPrefab)
-    local tPrefab = global.api.acseentity.rawFindPrefab(sPrefab)
-    -- Return recursive changes to Components StandaloneScenerySerialization
-    return tPrefab
-end
-
-function tablelength(T)
-    local count = 0
-    for _ in global.pairs(T) do
-        count = count + 1
-    end
-    return count
-end
-
-function groupComponents(tPrefab, tComponentNames)
-    local tComponents = {}
-    
-    if tPrefab['Components'] then 
-        for sName, tData in pairs(tPrefab.Components) do
-            if tComponentNames[sName] ~= nil then
-                tComponents[sName] = tData
-                tPrefab["Components"][sName] = nil
+-- @brief Hook the control options menu for JWE2
+ACSELuaDatabase._Hook_ControlsOptionsMenu = function(tModule)
+    tModule._ACSELuaDatabase_GetItems     = tModule.GetItems
+    tModule._ACSELuaDatabase_HandleEvent  = tModule.HandleEvent
+    tModule._ACSELuaDatabase_ApplyChanges = tModule.ApplyChanges
+    tModule.GetItems = function(self, _tSettingsMenuItemsData)
+        self:_ACSELuaDatabase_GetItems(_tSettingsMenuItemsData)
+        for _, handler in global.ipairs(global.api.acse._tControlsSettingsRegistrations) do
+            if handler.fGetItems then
+                handler.fGetItems(_tSettingsMenuItemsData['items'])
             end
         end
     end
+    tModule.HandleEvent = function(self, _sID, _arg)
+            api.debug.Trace("KeyboardSettings:HandleEvent()")
+            local bHandled, bNeedsRefresh = self:_ACSELuaDatabase_HandleEvent(_sID, _arg)
 
-    if tablelength(tComponents) > 0 then
-        tPrefab["Components"]["StandaloneScenerySerialisation"] = tComponents
-    end
-    if tPrefab["Children"] then
-        for sName, tData in pairs(tPrefab["Children"]) do
-            tPrefab["Children"][sName] = groupComponents(tData, tComponentNames)
+            local fRebind = function(sControlName) 
+                if api.game.GetGameName() == "Planet Zoo" then
+                    self:RebindButtonFlow(sControlName)
+                    local tNewItems = {}
+                    self:GetItems(tNewItems)
+                    self.guiWrapper:SetSettingsMenuContentData(tNewItems)
+                else -- JWE1/2
+                    tData = {
+                        ["type"] = 1,
+                        ["control"] = sControlName,
+                        ["label"] = "",
+                        ["targets"] = {
+                            [1] = 0
+                        }
+                    }
+                    self:HandleRebind(tData)
+                end
+            end
+
+            local fUnbind = function(sControlName)
+                api.input.RemoveLogicalButtonRebind(sControlName)
+                if api.game.GetGameName() == "Planet Zoo" then
+                    -- Need to enforce a refresh
+                    local tNewItems = {}
+                    self:GetItems(tNewItems)
+                    self.guiWrapper:SetSettingsMenuContentData(tNewItems)
+                end
+            end
+
+            for _, handler in ipairs(global.api.acse._tControlsSettingsRegistrations) do
+                if handler.fHandleEvent then
+                    bHandled, bNeedsRefresh = handler.fHandleEvent(_sID, _arg, bHandled, bNeedsRefresh, fRebind, fUnbind)
+                end
+            end
+            return bHandled, bNeedsRefresh
         end
-    end
-    return tPrefab
-end
-
-global.api.acseentity.CompilePrefab = function(tPrefab, sPrefab)
-    -- global.api.debug.Trace("*** entity.CompilePrefab func called with " .. sPrefab)
-    -- Process recursively and move custom components to the 
-    -- StandaloneScenerySerialisation component
-    local GameDatabase = require("Database.GameDatabase")
-    tCustomComponentNames = GameDatabase.GetLuaComponents()
-    if tablelength(tCustomComponentNames) > 0 then
-        tPrefab = groupComponents(tPrefab, tCustomComponentNames)
-    end
-    local ret = global.api.acseentity.rawCompilePrefab(tPrefab, sPrefab)
-    if ret == nil then global.api.debug.Error("Error compiling prefab: " .. global.tostring(sPrefab)) end
-    return ret
-end
-
---/
---/ InstantiatePrefab arguments:
---/ - prefab: table, or string, or lua prefab
---/ - name: string
---/ - token: userdata generated token
---/ - transform
---/ - parent: int entity ID of parent
---/ - attach: boolean attach to parent entity, I've seen nill with parent too so nope
---/ - properties: table 
---/ - entityID: int, if not null then entity ID for this instance
---/
-global.api.acseentity.InstantiatePrefab = function(sPrefab, sName, uToken, vTransform, nParent, bAttach, tProperties, nInstanceID)
-    --/ Physics world is the first prefab being instantiated in any game,
-    --/ at this moment the entity component is ready so we will rebuild
-    --/ the rest of prefabs defined by other mods. This piece in particular
-    --/ will come handy for prefabs required early in the loading process.
-
-    --/ Game default physics entity is PhysicsWorld, however in Planet Zoo this is renamed to MainPhysicsWorld
-    local sPyhsicsPrefab = 'PhysicsWorld'
-    if global.api.game.GetGameName() == "Planet Zoo" then sPyhsicsPrefab = 'MainPhysicsWorld' end
-
-    if sPrefab == sPyhsicsPrefab then
-        local GameDatabase = require("Database.GameDatabase")
-        if GameDatabase.BuildLuaPrefabs then
-            GameDatabase.BuildLuaPrefabs()
-        end
-    end
-
-    local entityId = global.api.acseentity.rawInstantiatePrefab(sPrefab, sName, uToken, vTransform, nParent, bAttach, tProperties, nInstanceID)
-    if entityId then
-        -- we can use the API to get the rest of the data from the Instance ID, this is used by our 
-        -- custom component manager to store the tProperties data when adding components to entities
-        -- based on properties.
-        global.api.acseentity.tLoadedEntities[entityId] = { sPrefab = sPrefab, tProperties = tProperties}
-    end
-
-    global.api.debug.Trace(
-        "Entity.InstantitePrefab() of " .. global.tostring(sPrefab) .. " with entityId : " .. entityId
-    )
-
-    return entityId
-end
-
---// Changes are this is to instantiate a descendant of a prefab by name
---// this seems to be obsolete, replaced by the prefabs list in the world file. 
-global.api.acseentity.InstantiateDesc = function(...)
-    local arg = {...}
-    for i,v in global.ipairs(arg) do
-        global.api.debug.Trace("arg : " .. global.tostring(v))
-    end
-
-    local descResult = global.api.acseentity.rawInstantiateDesc(...)
-    global.api.debug.Trace(
-        "Entity.InstantiteDesc() with entityId : " .. global.tostring(descResult)
-    )
-
-    return descResult
-end
-
-global.api.acseentity.CreateEntity = function(...)
-    local arg = {...}
-    for i,v in global.ipairs(arg) do
-        global.api.debug.Trace("arg : " .. global.tostring(v))
-    end
-    local entityId = global.api.acseentity.rawCreateEntity(...)
-    global.api.debug.Trace(
-        "Entity.CreateEntity()  with entityId : " .. global.tostring(entityId)
-    )
-
-    return entityId
-end
-
-global.api.acseentity.AddComponentsToEntity = function(nEntityId, tComponents, uToken)
-
-    -- Modify the tComponents array to ensure we conform the standalonesceneryserialization schema
-    local StandaloneScenerySerialisationID = global.api.componentmanager.LookupComponentManagerID('StandaloneScenerySerialisation')
-    for _, v in global.ipairs(tComponents) do
-
-        --/ Replace custom component IDs and rebuild the components table to use the StandaloneScenerySerialisation schema
-        --/ @todo: move this to a function
-        if v.id >= 10000 then
-            local sName = global.api.acsecustomcomponentmanager:GetComponentNameFromID(v.id)
-            if sName then
-                v.id = StandaloneScenerySerialisationID
-                v.tParams = { [sName]  = v.tParams }
+    tModule.ApplyChanges = function(self)
+        local ret = self:_ACSELuaDatabase_ApplyChanges()
+        for _, handler in global.ipairs(global.api.acse._tControlsSettingsRegistrations) do
+            if handler.fApplyChanges then
+                ret = handler.fApplyChanges()
             end
         end
+        return ret
     end
-
-    return global.api.acseentity.rawAddComponentsToEntity(nEntityId, tComponents, uToken)
 end
 
-global.api.acseentity.RemoveComponentsFromEntity = function(nEntityId, tComponents, uToken)
-    --global.api.debug.Trace("ComponentManager:RemoveComponentsFromEntity()")
-    --global.api.debug.Trace("Entities array: " .. table.tostring(tComponents, nil, nil, nil, true))
-    -- We are getting an array of IDs of components to remove, but we can't propagate these IDs to 
-    -- out custom component manager because they can't have any data attached. 
+-- List of custom hooks on other Lua modules
+ACSELuaDatabase.tDefaultHooks = {
+    ['Windows.KeyboardOptionsMenu'] = ACSELuaDatabase._Hook_ControlsOptionsMenu, -- JWE2
+    ['Windows.ControlsOptionsMenu'] = ACSELuaDatabase._Hook_ControlsOptionsMenu, -- PZ
+}
 
-    -- This loop will remove any Custom component ID and create a new table with them
-    local tNewComponentsTable = {}
-    local tCustomComponents   = {}
-    for _, v in global.ipairs(tComponents) do
-        if v >= 10000 then 
-            table.append(tCustomComponents, v)
+-- @brief Add our custom hooks to different Lua files
+ACSELuaDatabase.AddLuaHooks = function(_fnAdd)
+    local tData = ACSELuaDatabase.tDefaultHooks
+    for sModuleName, tParams in pairs(tData) do
+        _fnAdd(sModuleName, tParams)
+    end
+end
+
+-- Code to convert Manager injections into custom hooks
+ACSELuaDatabase._merge = function(a, b, bModifyOnly)
+    if global.type(a) == "table" and global.type(b) == "table" then
+      for k, v in global.pairs(b) do
+        if global.type(v) == "table" and global.type(a[k] or false) == "table" then
+          ACSELuaDatabase._merge(a[k], v, bModifyOnly)
         else
-            table.append(tNewComponentsTable, v)
+          if not bModifyOnly or bModifyOnly == false or (bModifyOnly == true and a[k] ~= nil) then
+            a[k] = v
+          end
         end
+      end
     end
-    tComponents = tNewComponentsTable
-
-    -- If we have subcomponents to handle, we remove them differently calling ourselves to the 
-    -- custom controller manager. If we try using the standalonesceneryserialisation ID  
-    -- we won't be able to remove any other subcomponent because the game will only propagate the call once.
-    if table.count(tCustomComponents) > 0 then
-        global.api.acsecustomcomponentmanager:RemoveCustomComponentsFromEntity(nEntityId, tCustomComponents, uToken)
-    end
-
-    -- dont call the original removecomponents if the final array is empty.
-    return global.api.acseentity.rawRemoveComponentsFromEntity(nEntityId, tComponents, uToken)
+    return a
 end
 
-
---//
---// Provide debug database support
---//
-global.api.acsedatabase = {}
-global.api.acsedatabase.tDatabases = {} -- Keep track of databases and prepared statements
-global.api.acsedatabase.rawCreateEmptyNamedDatabase = global.api.database.CreateEmptyNamedDatabase
-global.api.acsedatabase.rawLoadAndNameDatabase      = global.api.database.LoadAndNameDatabase
-global.api.acsedatabase.rawUnloadNamedDatabase      = global.api.database.UnloadNamedDatabase
-global.api.acsedatabase.rawDiscardDatabaseResources = global.api.database.DiscardDatabaseResources
-global.api.acsedatabase.rawMergeChildDatabase       = global.api.database.MergeChildDatabase
-
-global.api.acsedatabase.CreateEmptyNamedDatabase = function(sName, ...)
-    local ret = global.api.acsedatabase.rawCreateEmptyNamedDatabase(sName, ...)
-    if ret then global.api.acsedatabase.tDatabases[sName] = {} end
-    return ret
-end
-
-global.api.acsedatabase.LoadAndNameDatabase = function(sSymbol, sName, ...)
-    local ret = global.api.acsedatabase.rawLoadAndNameDatabase(sSymbol, sName, ...)
-    if ret then global.api.acsedatabase.tDatabases[sName] = {} end
-    return ret
-end
-
-global.api.acsedatabase.UnloadNamedDatabase = function(sName, ...)
-    local ret = global.api.acsedatabase.rawUnloadNamedDatabase(sName, ...)
-    global.api.acsedatabase.tDatabases[sName] = nil
-    return ret
-end
-
---[[ Found not to be necessary
-global.api.acsedatabase.DiscardDatabaseResources = function(sName, ...)
-    local ret = global.api.acsedatabase.rawDiscardDatabaseResources(sName, ...)
-    return ret
-end
-
-global.api.acsedatabase.MergeChildDatabase = function(sMainName, sContentName, sMergeRule)
-    local ret = global.api.acsedatabase.rawMergeChildDatabase(sMainName, sContentName, sMergeRule)
-    return ret
-end
-]]
-
-
--- @brief add our custom databases
-ACSEDatabase.AddContentToCall = function(_tContentToCall)
-    table.insert(_tContentToCall, require("Database.ACSE"))
-    if global.api.acse.devmodule ~= nil then 
-        global.package.preload['acsedev'] = global.api.acse.devmodule
-        local devmod = require('acsedev')
-        global.package.preload['acsedev'] = nil
-        if devmod then table.insert(_tContentToCall, devmod ) end 
+-- @brief will create a hook for every Environment file that requires custom data injection.
+ACSELuaDatabase._CreateHooksForManagers = function()
+    for _, tParams in global.ipairs(api.acse.tEnvironmentProtos) do
+      table.insert(
+        api.acse.tLuaHooks, 
+          {   
+            sName = tParams.sName,
+            tData = function(tModule)
+              local sEnvironment = tParams.sName
+              for _sName, _tParams in global.pairs(tParams.tData) do
+                if not _tParams.__inheritance or _tParams.__inheritance == "Overwrite" then
+                  api.debug.Trace("Adding Manager: " .. _sName .. " in " .. sEnvironment)
+                  tModule.EnvironmentPrototype["Managers"][_sName] = _tParams
+                end
+                if _tParams.__inheritance == "Append" then
+                  api.debug.Trace("Merging Manager: " .. _sName .. " in " .. sEnvironment)
+                  tModule.EnvironmentPrototype["Managers"][_sName] = ACSELuaDatabase._merge(tModule.EnvironmentPrototype["Managers"][_sName], _tParams)
+                end
+                if _tParams.__inheritance == "Modify" then
+                  api.debug.Trace("Modifying Manager: " .. _sName .. " in " .. sEnvironment)
+                  tModule.EnvironmentPrototype["Managers"][_sName] = ACSELuaDatabase._merge(tModule.EnvironmentPrototype["Managers"][_sName], _tParams, true)
+                end
+              end
+            end
+          }
+        )
     end
 end
+
