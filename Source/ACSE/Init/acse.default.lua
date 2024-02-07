@@ -26,7 +26,7 @@ global.loadfile("acse : ACSE.Default.lua loaded")
 
 local ACSE = module(...)
 
-ACSE.versionNumber = 0.713
+ACSE.versionNumber = 0.714
 
 ACSE.tAppendToVersionString = {{
     text = string.format("ACSE %1.3f", ACSE.versionNumber),
@@ -35,31 +35,31 @@ ACSE.tAppendToVersionString = {{
 
 -- List of core modules to load
 ACSE.tModules = {
-	'acse.global',
-	'acse.entity',
-	'acse.componentmanager',
+    'acse.global',
+    'acse.entity',
+    'acse.componentmanager',
     'acse.game',
     'acse.debug',
     'acse.tweakables',
 }
 
 ACSE.GetVersionString = function()
-	return string.format("%1.3f", ACSE.versionNumber)
+    return string.format("%1.3f", ACSE.versionNumber)
 end
 
 ACSE.OnInit = function()
-	-- Save as a global resource
-	api.acse = ACSE
+    -- Save as a global resource
+    api.acse = ACSE
 
-	for _, sModuleName in ipairs(ACSE.tModules) do
-	    sModuleName = string.lower(sModuleName)
-	    global.loadfile("acse : ACSE.lua loading " .. sModuleName)
-	    local tModule = tryrequire(sModuleName)
-	    if tModule ~= nil then
-	    	--ACSE.tModules[v] =
-	        tModule:Init()
-	    end
-	end
+    for _, sModuleName in ipairs(ACSE.tModules) do
+        sModuleName = string.lower(sModuleName)
+        global.loadfile("acse : ACSE.lua loading " .. sModuleName)
+        local tModule = tryrequire(sModuleName)
+        if tModule ~= nil then
+            --ACSE.tModules[v] =
+            tModule:Init()
+        end
+    end
 
     -- We still want tracing of this step
     global.loadfile("acse : ACSE.lua reloading modules")
@@ -97,10 +97,10 @@ ACSE.OnInit = function()
         return true
     end
 
-	-- Force reload of the files we want the API changes to affect to.
-	ACSE_ReloadModule('Environment.Environment')
-	ACSE_ReloadModule('Game.BaseGame')
-	ACSE_ReloadModule('Game.GameScript')
+    -- Force reload of the files we want the API changes to affect to.
+    ACSE_ReloadModule('Environment.Environment')
+    ACSE_ReloadModule('Game.BaseGame')
+    ACSE_ReloadModule('Game.GameScript')
 end
 
 -- TODO: Move to its own module?

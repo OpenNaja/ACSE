@@ -66,7 +66,7 @@ Tweakables.Api_GetDebugTweakable = function(self, _raw, id)
     return nil
 end
 
-Tweakables.Api_GetAllDebugTweakable = function(self, _raw, id)
+Tweakables.Api_GetAllDebugTweakables = function(self, _raw, id)
     return self.tTweakables
 end
 

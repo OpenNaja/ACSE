@@ -1,11 +1,17 @@
 <SpecdefRoot attrib_count="0" flags="1" name_count="0" childspec_count="1" manager_count="0" script_count="0" game="Games.PLANET_ZOO">
 	<attribs />
-	<names />
+	<names>
+		<ptrs />
+	</names>
 	<childspecs pool_type="3">
 		<ptrs>
 			<pointer pool_type="3">transform</pointer>
 		</ptrs>
 	</childspecs>
-	<managers />
-	<scripts />
+	<managers>
+		<ptrs />
+	</managers>
+	<scripts>
+		<ptrs />
+	</scripts>
 </SpecdefRoot>
