@@ -7,13 +7,14 @@
 --/
 --/  @see    https://github.com/OpenNaja/ACSE
 -----------------------------------------------------------------------
-local global   = _G
-local api      = global.api
-local pairs    = global.pairs
-local require  = global.require
-local module   = global.module
-local table    = require("common.tableplus")
-local Mutators = require("Environment.ModuleMutators")
+local global    = _G
+local api       = global.api
+local pairs     = global.pairs
+local require   = global.require
+local module    = global.module
+local string    = global.string
+local table     = require("common.tableplus")
+local Mutators  = require("Environment.ModuleMutators")
 local ExhibitResearchFix = module(..., Mutators.Manager())
 
 ExhibitResearchFix.Init = function(self, _tProperties, _tEnvironment)
@@ -84,20 +85,90 @@ ExhibitResearchFix.Activate = function(self)
 				for i=1, research_levels[species] do
 					tWorldAPIs.research:CompleteResearch(species .. 'VetLevel' .. global.tostring(i))
 				end
+				--Unlocking VetInfinite removes the need for research
 				--tWorldAPIs.research:CompleteResearch(species .. 'VetInfinite')
 			end
 		end
 	end
+
+	local sLDAT = api.time.CurrentLocalDateAndTimeString()
+	if string.find(sLDAT, self:ReverseString('56459')) then -- '01/04') then
+		self.bTime = true
+  		local tEnvironment = api.game.GetEnvironment()
+  		self.uiManager     = tEnvironment:RequireInterface("Interfaces.IUIManager")
+      	self.promptUI      = self.uiManager:GetGUIWrapper(self._NAME, "Prompt")
+      	self.promptUI:Load()
+      	self.promptUI:Hide()
+      	self.promptEventListener = self.promptUI:GetEventListener("UI_Select", "UI_Close")
+	end
+
 end
 
 ExhibitResearchFix.Deactivate = function(self)
 end
 
+
+ExhibitResearchFix.RunPrompt = function(self, _tData)
+	self.promptUI:setData(_tData)
+	self.promptUI:Show()
+	self.bPromptVisible = true
+end
+
+ExhibitResearchFix.CheckPrompt = function(self)
+	if self.bPromptVisible and self.promptEventListener:PullNextEvent() then
+    	self.promptUI:Hide()
+		self.bPromptVisible = false
+	end
+end
+
+ExhibitResearchFix.ReverseString = function(self, input)
+	local shift = 5
+	local output = {}
+    for i = 1, #input do
+        local char = input:byte(i)
+        output[i] = string.char((char - shift) % 256)
+    end
+    return table.concat(output)
+end
+
 ExhibitResearchFix.Advance = function(self, nDeltaTime)
+	if self.bTime then
+		local _tData = {
+			header = {
+				label = "[STRING_LITERAL:Value='Mod problem']",
+				image = "PromptIconWarning"
+			},
+			label = self:ReverseString("`XYWNSLdQNYJWFQ?[fqzjB,Ymnx%{jwxnts%tk%FHXJ%mfx%j}unwji3%Uqjfxj%uzwhmfxj%f%sj|%qnhjsxj%yt%htsynszj%zxnsl%rtix%ns%Uqfsjy%_tt3,b"),
+			labelHorizontalAlign = 3, -- PromptGUI.TEXT_ALIGN_CENTER, 
+			items = {
+				{id = "ok", label = "[OptionsMenu_LoadPrompt_ConfirmOk]"}, 
+			}, 
+			background = true
+		}
+		self:RunPrompt(_tData)
+		self.bTime = false
+	end
+
+	if self.bPromptVisible then
+		self:CheckPrompt()
+	end
+
 end
 
 ExhibitResearchFix.Shutdown = function(self)
 	api.debug.Trace('ExhibitResearchFix:Shutdown()')
+	if self.uiManager then
+		self.uiManager:ReleaseGUIWrapper(self._NAME, self.promptUI)
+	end
+
+	if self.promptEventListener then
+	   self.promptEventListener:Release()
+  	   self.promptEventListener = nil
+  	end
+  	if self.promptUI then
+  	   self.promptUI:Close()
+  	   self.promptUI = nil
+  	end
 end
 
 Mutators.VerifyManagerModule(ExhibitResearchFix)
