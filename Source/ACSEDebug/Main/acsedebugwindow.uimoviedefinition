@@ -1,0 +1,9 @@
+<UiMovieHeader flag_1="33" flag_2="2" flag_3="0" u_0="0" num_ui_triggers="0" u_1="0" num_ui_names="0" num_assetpkgs="0" u_2="0" num_list_1="0" num_list_2="0" num_ui_interfaces="0" u_3="0" u_4="0" u_5="0" game="Games.PLANET_COASTER" _address="3 | 0" _size="144">
+	<movie_name _address="0 | 194" _size="16">ACSEDebugWindow</movie_name>
+	<pkg_name _address="0 | 210" _size="16">ACSEDebugWindow</pkg_name>
+	<category_name _address="0 | 226" _size="4">GUI</category_name>
+	<type_name _address="0 | 230" _size="94">UIMovie</type_name>
+	<floats>1.0 1.0 2.0</floats>
+	<list_1 _address="0 | None" _size="-1" />
+	<list_2 _address="0 | None" _size="-1" />
+</UiMovieHeader>

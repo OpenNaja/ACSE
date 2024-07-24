@@ -1,4 +1,5 @@
-# Awesome Cobra Script Extender
+# Advanced Cobra Script Extender
+
 You probably reached this page because a mod asked you to download and install ACSE. If this the case then please follow the instructions below.
 
 ### Installing ACSE

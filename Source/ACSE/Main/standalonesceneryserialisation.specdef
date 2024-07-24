@@ -1,0 +1,6 @@
+<SpecdefRoot attrib_count="0" flags="1" game="Games.PLANET_ZOO">
+	<attribs />
+	<childspecs pool_type="3">
+		<pointer pool_type="3">transform</pointer>
+	</childspecs>
+</SpecdefRoot>
