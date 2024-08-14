@@ -21,6 +21,8 @@ local tostring     = global.tostring
 local pairs        = global.pairs
 local string       = global.string
 local require      = global.require
+local tryrequire   = global.tryrequire
+local coroutine    = global.coroutine
 local table        = require("Common.tableplus")
 local Object       = require("Common.object")
 local Base         = require("LuaComponentManagerBase")
@@ -285,6 +287,47 @@ ACSEDebugComponent.Init = function(self, _tWorldAPIs)
     self.tShellCommands = {
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
+                if #tArgs < 1 then
+                    return false, "Loadfilescript requires at least one argument, the name of the lua file (without the .lua extension). Other arguments will be passed to the script\n"
+                end
+
+                local sModuleName = global.tostring(tArgs[1])
+                global.api.debug.WriteLine(tEnv.output, "Loading file: " .. sModuleName)
+                local pf, sMsg = global.loadfile("Dev/Lua/" .. sModuleName .. ".lua")
+                if pf == nil and global.string.find(sMsg, "No such file or directory") then
+                    local sName = global.string.gsub(sModuleName, "%.", "/")
+                    pf, sMsg = global.loadfile("Dev/Lua/" .. sName .. ".lua")
+                end
+                if pf ~= nil and global.type(pf) == "function" then
+                    api.debug.Trace("calling StartScript")
+                    self:_StartFileScript(pf(sModuleName), global.unpack(tArgs))
+                    return true, nil
+                else
+                    return false, "Lua file not loaded: " .. global.tostring(sMsg) .. "\n"
+                end
+            end,
+            "&Load&File&Script {string} [optional args]",
+            "Loads and execute a Lua file from the game dev/ folder.\n"
+        ),
+        api.debug.RegisterShellCommand(
+            function(tEnv, tArgs)
+                if #tArgs < 1 then
+                    return false, "Needs the name of the Script script to run"
+                end
+                -- TODO ADD THE REST OF ARGUMENTS TOO like in lf
+
+                -- Try importing the file if exists, ideally from full path
+
+                api.debug.Trace("calling StartScript")
+                self:_StartScript(tArgs[1], global.unpack(tArgs))
+                return true, nil
+            end,
+            "&Start&Script {string} [optional args]",
+            "Runs a Script file.\n"
+        ),
+
+        api.debug.RegisterShellCommand(
+            function(tEnv, tArgs)
                 self.uiMovie:ClearLog()
             end,
             "Cls",
@@ -456,6 +499,56 @@ ACSEDebugComponent._updateTextKeyStatus = function(self)
     end
 end
 
+ACSEDebugComponent._StartFileScript = function(self, oScriptCode, ...)
+
+    if oScriptCode == nil then
+        api.debug.WriteLine(1,"Script object required")
+        return 
+    end
+
+    self.oScript = oScriptCode:new()
+    self.oScript:Init( {...} )
+    self.tReceivedEvents = {}
+
+    self.fnRunScriptCo =
+        coroutine.wrap( function()
+            self.oScript:Run()
+            return true
+        end
+    )
+    
+end
+
+
+ACSEDebugComponent._StartScript = function(self, sScript, ...)
+    -- TODO: add tProperties.ScriptsPath after dir-separator replacement
+
+    local sName = global.string.gsub(sScript, "%.", "/")
+    local _sScript = string.lower(sName)
+
+    local oScriptCode = tryrequire(_sScript)
+    api.debug.Assert(oScriptCode ~= nil, "Script name '" .. _sScript .. "' doesn't match a lua file")
+    self.oScript = oScriptCode:new()
+    self.oScript:Init({...})
+    self.tReceivedEvents = {}
+
+    self.fnRunScriptCo =
+        coroutine.wrap( function()
+            self.oScript:Run()
+            return true
+        end
+    )
+end
+
+
+ACSEDebugComponent._RunScript = function(self)
+    if self.fnRunScriptCo and self.fnRunScriptCo() then
+        self.fnRunScriptCo = nil
+        self.oScript:Shutdown()
+        self.oScript = nil
+    end
+end
+
 --
 -- @brief This component doesn't track any entities
 -- @param _nDeltaTime (number) time in milisecs since the last update, affected by
@@ -464,6 +557,8 @@ end
 --
 ACSEDebugComponent.Advance = function(self, _nDeltaTime, _nUnscaledDeltaTime)
     --api.debug.Trace("ACSEDebug:Advance() " .. global.tostring(_nDeltaTime) )
+
+    self:_RunScript()
 
     api.debug.ClearScreen("Planet Zoo\x00") -- api.game.GetGameName())
 

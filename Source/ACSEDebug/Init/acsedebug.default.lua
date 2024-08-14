@@ -26,7 +26,7 @@ global.loadfile("acse : acsedebug.lua loaded")
 
 local ACSEDebug = module(...)
 
-ACSEDebug.version = 0.014
+ACSEDebug.version = 0.015
 
 local API_ReloadModule = function(sModuleName)
     api.debug.Trace("Reloading module: " .. tostring(sModuleName))
