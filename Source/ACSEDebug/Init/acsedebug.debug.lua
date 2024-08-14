@@ -47,6 +47,7 @@ Debug.Init = function(self)
     self.ClearConsole       = package.loadlib(".\\Win64\\ovldata\\ACSEDebug\\ACSEDebug", 'fnClearConsole')
 
     self.sLogFile           = nil
+    self.sConsole           = nil
 
     -- This is the only module we can't mangle with their metatable, because we are in the middle
     -- of a function that will change it within API.Debug.lua
@@ -113,6 +114,10 @@ Debug.Init = function(self)
 
     api.debug.WriteConsole = function(...)
         return self:Api_WriteConsole(raw, ...)
+    end
+
+    api.debug.WriteToCommandConsole = function(...)
+        return self:Api_WriteToCommandConsole(raw, ...)
     end
 
     api.debug.CloseConsole = function(...)
@@ -254,7 +259,21 @@ Debug.Api_ClearConsole = function(self, _raw)
 end
 
 Debug.Api_WriteConsole = function(self, _raw, sText)
-    self.WriteConsole(sText)
+    --if self.sConsole == nil then
+        api.debug.WriteLine(1, tostring(sText))
+        api.debug.Trace(tostring(sText))
+    --else
+    --    self.WriteConsole(sText)
+    --end
+end
+
+Debug.Api_WriteToCommandConsole = function(self, _raw, sText)
+    --if self.sConsole == nil then
+        api.debug.WriteLine(1, tostring(sText))
+        api.debug.Trace(tostring(sText))
+    --else
+    --    self.WriteConsole(sText)
+    --end
 end
 
 Debug.Api_ClearScreen = function(self, _raw)

@@ -210,6 +210,8 @@ ShellCommands.Api_RunShellCommand = function(self, _raw, sCmd)
         if sMsg ~= nil then
             global.api.debug.WriteLine( tEnv.output, global.tostring(sMsg))
         end
+    else -- cmd == nil
+            global.api.debug.WriteLine( tEnv.output, 'Command or shortcut not found: ' .. table.tostring(name))
     end
 end
 
