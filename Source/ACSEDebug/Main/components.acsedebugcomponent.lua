@@ -507,12 +507,16 @@ ACSEDebugComponent._StartFileScript = function(self, oScriptCode, ...)
     end
 
     self.oScript = oScriptCode:new()
-    self.oScript:Init( {...} )
+    if self.oScript.Init then
+        self.oScript:Init({...})
+    end
     self.tReceivedEvents = {}
 
     self.fnRunScriptCo =
         coroutine.wrap( function()
-            self.oScript:Run()
+            if self.oScript.Shutdown then
+                self.oScript:Run()
+            end
             return true
         end
     )
@@ -529,12 +533,16 @@ ACSEDebugComponent._StartScript = function(self, sScript, ...)
     local oScriptCode = tryrequire(_sScript)
     api.debug.Assert(oScriptCode ~= nil, "Script name '" .. _sScript .. "' doesn't match a lua file")
     self.oScript = oScriptCode:new()
-    self.oScript:Init({...})
+    if self.oScript.Init then
+        self.oScript:Init({...})
+    end
     self.tReceivedEvents = {}
 
     self.fnRunScriptCo =
         coroutine.wrap( function()
-            self.oScript:Run()
+            if self.oScript.Run then
+                self.oScript:Run()
+            end
             return true
         end
     )
@@ -544,7 +552,9 @@ end
 ACSEDebugComponent._RunScript = function(self)
     if self.fnRunScriptCo and self.fnRunScriptCo() then
         self.fnRunScriptCo = nil
-        self.oScript:Shutdown()
+        if self.oScript.Shutdown then
+            self.oScript:Shutdown()
+        end
         self.oScript = nil
     end
 end
