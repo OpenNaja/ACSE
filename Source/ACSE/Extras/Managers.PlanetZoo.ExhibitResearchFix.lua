@@ -84,7 +84,7 @@ ExhibitResearchFix.Activate = function(self)
 				for i=1, research_levels[species] do
 					tWorldAPIs.research:CompleteResearch(species .. 'VetLevel' .. global.tostring(i))
 				end
-				tWorldAPIs.research:CompleteResearch(species .. 'VetInfinite')
+				--tWorldAPIs.research:CompleteResearch(species .. 'VetInfinite')
 			end
 		end
 	end
