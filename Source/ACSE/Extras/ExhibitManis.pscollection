@@ -1,0 +1,17 @@
+<PscollectionRoot count="1" game="Games.PLANET_ZOO">
+	<prepared_statements pool_type="4">
+		<preparedstatement arg_count="7">
+			<args pool_type="4">
+				<arg arg_type="3" arg_index="1" />
+				<arg arg_type="3" arg_index="2" />
+				<arg arg_type="3" arg_index="3" />
+				<arg arg_type="3" arg_index="4" />
+				<arg arg_type="3" arg_index="5" />
+				<arg arg_type="3" arg_index="6" />
+				<arg arg_type="3" arg_index="7" />
+			</args>
+			<statement_name>UpdatePoseDataForSpecies</statement_name>
+			<sql_query>UPDATE ExhibitAnimalPoses SET Anim1=CASE WHEN ?1 == 'NULL' THEN NULL ELSE ?1 END, Anim2=CASE WHEN ?2 == 'NULL' THEN NULL ELSE ?2 END, Anim3=CASE WHEN ?3 == 'NULL' THEN NULL ELSE ?3 END, Anim4=CASE WHEN ?4 == 'NULL' THEN NULL ELSE ?4 END, Anim5=CASE WHEN ?5 == 'NULL' THEN NULL ELSE ?5 END, Anim6=CASE WHEN ?6 == 'NULL' THEN NULL ELSE ?6 END WHERE PoseName=?7 ;</sql_query>
+		</preparedstatement>
+	</prepared_statements>
+</PscollectionRoot>

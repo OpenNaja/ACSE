@@ -287,6 +287,11 @@ ACSEDebugComponent.Init = function(self, _tWorldAPIs)
     self.tShellCommands = {
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
+
+                if self:_IsScriptRunning() then
+                    return false, "Another script is already running, use StopRunningScript to stop it"
+                end
+
                 if #tArgs < 1 then
                     return false, "Loadfilescript requires at least one argument, the name of the lua file (without the .lua extension). Other arguments will be passed to the script\n"
                 end
@@ -311,6 +316,11 @@ ACSEDebugComponent.Init = function(self, _tWorldAPIs)
         ),
         api.debug.RegisterShellCommand(
             function(tEnv, tArgs)
+
+                if self:_IsScriptRunning() then
+                    return false, "Another script is already running, use StopRunningScript to stop it"
+                end
+
                 if #tArgs < 1 then
                     return false, "Needs the name of the Script script to run"
                 end
@@ -324,6 +334,18 @@ ACSEDebugComponent.Init = function(self, _tWorldAPIs)
             end,
             "&Start&Script {string} [optional args]",
             "Runs a Script file.\n"
+        ),
+        api.debug.RegisterShellCommand(
+            function(tEnv, tArgs)
+                if #tArgs < 1 then
+                    return false, "Needs the name of the Script script to run"
+                end
+                api.debug.Trace("calling StopScript")
+                self:_StopScript()
+                return true, nil
+            end,
+            "&Stop&Running$Script",
+            "Stops the running module script if any.\n"
         ),
 
         api.debug.RegisterShellCommand(
@@ -538,8 +560,8 @@ ACSEDebugComponent._StartScript = function(self, sScript, ...)
     end
     self.tReceivedEvents = {}
 
-    self.fnRunScriptCo =
-        coroutine.wrap( function()
+    self.fnRunScriptCo = coroutine.wrap( 
+        function()
             if self.oScript.Run then
                 self.oScript:Run()
             end
@@ -548,6 +570,19 @@ ACSEDebugComponent._StartScript = function(self, sScript, ...)
     )
 end
 
+ACSEDebugComponent._IsScriptRunning = function(self)
+  return self.oScript ~= nil
+end
+
+ACSEDebugComponent._StopScript = function(self)
+    if self.fnRunScriptCo then
+        self.fnRunScriptCo = nil
+        if self.oScript.Shutdown then
+            self.oScript:Shutdown()
+        end
+        self.oScript = nil
+    end
+end
 
 ACSEDebugComponent._RunScript = function(self)
     if self.fnRunScriptCo and self.fnRunScriptCo() then

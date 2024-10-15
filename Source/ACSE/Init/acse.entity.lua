@@ -55,7 +55,55 @@ Entity.Init = function(self)
 end
 
 Entity.Api_FindPrefab = function(self, _raw, sPrefabName)
+    --api.debug.Trace("Entity FindPrefab: " .. tostring(sPrefabName))
+
+    -- PC1 case, FindPrefab doesn't exist, this prevents a crash
+    if _raw.FindPrefab == nil then return nil end
+    
     local ret = _raw.FindPrefab(sPrefabName)
+
+    --[[
+    if global.type(ret) == 'table' then
+        local tPrefab = ret
+
+        -- UnGroup components 
+        ACSEEntity_UnGroupComponents = function(tPrefab, tComponentNames)
+            local tComponents = {}
+
+            if tPrefab['Components'] and tPrefab['Components']["StandaloneScenerySerialisation"] then
+                local bRemove = true
+                for key, value in pairs(tPrefab['Components']["StandaloneScenerySerialisation"]) do
+                    if global.type(value) == 'table' then
+                        tPrefab['Components'][key] = table.copy(value)
+                        tPrefab['Components']["StandaloneScenerySerialisation"][key] = nil            
+                    else
+                        bRemove = true
+                    end
+                end
+                if bRemove then
+                    tPrefab['Components']["StandaloneScenerySerialisation"] = nil
+                end
+            end
+
+            if tPrefab["Children"] then
+                for sName, tData in pairs(tPrefab["Children"]) do
+                    tPrefab["Children"][sName] = ACSEEntity_UnGroupComponents(tData, tComponentNames)
+                end
+            end
+
+            return tPrefab
+        end
+
+        -- Get the components from ACSE after CallOnContent bootstrap
+        local tCustomComponentNames = GameDatabase.GetLuaComponents()
+        if table.count(tCustomComponentNames) > 0 then
+            tPrefab = ACSEEntity_UnGroupComponents(tPrefab, tCustomComponentNames)
+        end
+
+        ret = tPrefab
+    end
+    ]]
+
     return ret
 end
 

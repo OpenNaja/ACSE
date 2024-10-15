@@ -10,13 +10,13 @@
 
 local global       = _G
 local api          = global.api
+local ipairs       = global.ipairs
 local string       = global.string
-local require      = global.require
 local package      = global.package
 local type         = global.type
 local tostring     = global.tostring
+local require      = global.require
 local table        = require('common.tableplus')
-local GameDatabase = require("Database.GameDatabase")
 
 local Object       = require("Common.object")
 
@@ -30,6 +30,7 @@ Debug.Init = function(self)
     self._tHandlers = {}
 
     api.acse.debug = Debug
+
 end
 
 Debug.Shutdown = function(self)

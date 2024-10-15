@@ -26,7 +26,7 @@ global.loadfile("acse : ACSE.Default.lua loaded")
 
 local ACSE = module(...)
 
-ACSE.versionNumber = 0.723
+ACSE.versionNumber = 0.727
 
 ACSE.tAppendToVersionString = {{
     text = string.format("ACSE %1.3f", ACSE.versionNumber),
