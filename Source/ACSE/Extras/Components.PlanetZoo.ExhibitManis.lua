@@ -237,7 +237,7 @@ end
 -- @brief Sets animations for an indidivual pose data in the fdb, used to clear and restore manis information
 --
 ExhibitManis.SetFDBPoseData = function(self, sPoseName, sAnim1, sAnim2, sAnim3, sAnim4, sAnim5, sAnim6)
-    self:Debug(self.DebugLevels.Info, "ExhibitManis.SetFDBPoseData() Saving new FDB  data for pose: ",  sPoseName)
+    self:Debug(self.DebugLevels.Debug, "ExhibitManis.SetFDBPoseData() Saving new FDB  data for pose: ",  sPoseName)
 
     api.database.SetReadOnly("Exhibits", false)
     local oPreparedStatement = api.database.GetPreparedStatementInstance("Exhibits", "UpdatePoseDataForSpecies")
