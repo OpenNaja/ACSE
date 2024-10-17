@@ -671,11 +671,11 @@ ExhibitManis.GenerateQueue = function(self, nEntityID)
  
   self:Debug(self.DebugLevels.Extra, "Current animation poll", tQueuePossibilities)
 
+  --[[ This introduces weighted randomization but removes the possibility of chained animations
   while table.count(tQueuePossibilities) > 0 do
     local idx, tAnimData = table.weightedRandom(tQueuePossibilities)
     tQueuePossibilities[idx] = nil -- Remove this entry 
-    --api.debug.Trace("Current weighted option " .. table.tostring(idx))
-
+    
     if tAnimData.canLoop then
         local count = math.random( math.floor(tAnimData.minLoop),  math.ceil(tAnimData.maxLoop))
         --api.debug.Trace("can loop times: " .. table.tostring(count))
@@ -686,8 +686,26 @@ ExhibitManis.GenerateQueue = function(self, nEntityID)
         --api.debug.Trace("Can't loop")
         table.insert(self.tEntities[nEntityID].tQueue, idx)
     end
-
   end
+  ]]
+
+  -- Make a chained animation 
+  for i=1, 6 do
+    local key = 'Anim' .. global.tostring(i)
+    if self.tEntities[nEntityID][key] then
+        local tAnimData = self.tAnimationData[ self.tEntities[nEntityID][key] ]
+        if tAnimData.canLoop then
+            local count = math.random( math.floor(tAnimData.minLoop),  math.ceil(tAnimData.maxLoop))
+            for i = 1, count do
+                table.insert(self.tEntities[nEntityID].tQueue, self.tEntities[nEntityID][key])
+            end
+        else 
+            --api.debug.Trace("Can't loop")
+            table.insert(self.tEntities[nEntityID].tQueue, self.tEntities[nEntityID][key])
+        end
+    end
+  end
+
 end
 
 --
