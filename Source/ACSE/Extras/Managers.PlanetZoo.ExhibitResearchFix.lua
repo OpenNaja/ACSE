@@ -20,15 +20,22 @@ local ExhibitResearchFix = module(..., Mutators.Manager())
 ExhibitResearchFix.Init = function(self, _tProperties, _tEnvironment)
 	api.debug.Trace('ExhibitResearchFix:Init()')
 	if _tEnvironment then
-        self.scenarioManager  = _tEnvironment:RequireInterface("Interfaces.IScenarioManager")
-        self.bResearchEnabled = self.scenarioManager:GetEnableSandboxResearch()
+        self.scenarioManager = _tEnvironment:RequireInterface("Interfaces.IScenarioManager")
+        --self.bEnableUnlocks  = ((self.scenarioManager:IsSandboxMode() == true) and (self.scenarioManager:GetEnableSandboxResearch() == false))
     end
 end
 
 ExhibitResearchFix.Activate = function(self)
 	api.debug.Trace('ExhibitResearchFix:Activate()')
 
-	if self.bResearchEnabled == true then return end
+	-- During init Sandbox settings are still not populated correctly to query them
+	self.bEnableUnlocks  = ((self.scenarioManager:IsSandboxMode() == true) and (self.scenarioManager:GetEnableSandboxResearch() == false))
+	if self.bEnableUnlocks == false then 
+		api.debug.Trace('Research unlocks disabled by game mode and options')
+		api.debug.Trace('Is Sandbox mode: ' .. table.tostring(self.scenarioManager:IsSandboxMode()))
+		api.debug.Trace('Is Research enabled: ' .. table.tostring(self.scenarioManager:GetEnableSandboxResearch()))
+		return 
+	end
 
 	local tWorldAPIs  = api.world.GetWorldAPIs()
 
@@ -92,7 +99,7 @@ ExhibitResearchFix.Activate = function(self)
 	end
 
 	local sLDAT = api.time.CurrentLocalDateAndTimeString()
-	if string.find(sLDAT, self:ReverseString('56459')) then -- '01/04') then
+	if string.find(sLDAT, self:ReverseString('56459')) then 
 		self.bTime = true
   		local tEnvironment = api.game.GetEnvironment()
   		self.uiManager     = tEnvironment:RequireInterface("Interfaces.IUIManager")
